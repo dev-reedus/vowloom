@@ -3,10 +3,15 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import {
   addGuest,
+  addTable,
   deleteGuest,
+  deleteTable,
   listGuests,
+  listTables,
   seedIfEmpty,
+  seedTablesIfEmpty,
   updateGuest,
+  updateTable,
 } from './db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -39,10 +44,8 @@ if (AUTH_PASSWORD) {
   console.warn('[server] WARNING: AUTH_PASSWORD not set — the site is unprotected.')
 }
 
-// ---- API ----
-app.get('/api/guests', (_req, res) => {
-  res.json(listGuests())
-})
+// ---- guests API ----
+app.get('/api/guests', (_req, res) => res.json(listGuests()))
 
 app.post('/api/guests', (req, res) => {
   const name = (req.body?.name || '').trim()
@@ -51,15 +54,31 @@ app.post('/api/guests', (req, res) => {
 })
 
 app.patch('/api/guests/:id', (req, res) => {
-  const { sent, accepted } = req.body ?? {}
-  const guest = updateGuest(Number(req.params.id), { sent, accepted })
+  const guest = updateGuest(Number(req.params.id), req.body ?? {})
   if (!guest) return res.status(404).json({ error: 'not found' })
   res.json(guest)
 })
 
 app.delete('/api/guests/:id', (req, res) => {
-  const ok = deleteGuest(Number(req.params.id))
-  if (!ok) return res.status(404).json({ error: 'not found' })
+  if (!deleteGuest(Number(req.params.id))) return res.status(404).json({ error: 'not found' })
+  res.status(204).end()
+})
+
+// ---- tables API ----
+app.get('/api/tables', (_req, res) => res.json(listTables()))
+
+app.post('/api/tables', (req, res) => {
+  res.status(201).json(addTable(req.body ?? {}))
+})
+
+app.patch('/api/tables/:id', (req, res) => {
+  const table = updateTable(Number(req.params.id), req.body ?? {})
+  if (!table) return res.status(404).json({ error: 'not found' })
+  res.json(table)
+})
+
+app.delete('/api/tables/:id', (req, res) => {
+  if (!deleteTable(Number(req.params.id))) return res.status(404).json({ error: 'not found' })
   res.status(204).end()
 })
 
@@ -67,7 +86,9 @@ app.delete('/api/guests/:id', (req, res) => {
 app.use(express.static(DIST_DIR))
 app.get('*', (_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')))
 
-const result = seedIfEmpty()
-if (result.seeded > 0) console.log(`[server] Seeded ${result.seeded} guests from lista.txt.`)
+const gseed = seedIfEmpty()
+if (gseed.seeded > 0) console.log(`[server] Seeded ${gseed.seeded} guests from lista.txt.`)
+const tseed = seedTablesIfEmpty()
+if (tseed.seeded > 0) console.log(`[server] Seeded ${tseed.seeded} example tables.`)
 
 app.listen(PORT, () => console.log(`[server] Listening on :${PORT}`))
