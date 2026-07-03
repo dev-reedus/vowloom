@@ -258,9 +258,11 @@
   transition: color 0.2s, background 0.2s;
 }
 
-.remove:hover {
-  color: var(--rose-deep);
-  background: rgba(201, 154, 154, 0.14);
+@media (hover: hover) {
+  .remove:hover {
+    color: var(--rose-deep);
+    background: rgba(201, 154, 154, 0.14);
+  }
 }
 
 /* ---------- Misc ---------- */
@@ -280,11 +282,95 @@
   font-size: 0.85rem;
 }
 
-@media (max-width: 480px) {
-  .guest {
-    justify-content: flex-start;
+/* ---------- Responsive ---------- */
+@media (max-width: 600px) {
+  .page {
+    padding: 2rem 1rem 3rem;
   }
+
+  .lang-toggle {
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 40px;
+    height: 40px;
+  }
+
+  .hero {
+    margin-bottom: 2rem;
+    padding-top: 0.75rem; /* clear the language button */
+  }
+
+  .stats {
+    gap: 0.5rem;
+  }
+
+  .stat {
+    padding: 0.85rem 0.35rem;
+    border-radius: 14px;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+  }
+
+  .stat-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+  }
+
+  .add-form button {
+    padding: 0 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stack the guest card: name on its own line, actions spread below it. */
+  .guest {
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+  }
+
   .guest-name {
     width: 100%;
+    min-width: 0;
+    font-size: 1.2rem;
+    word-break: break-word;
+  }
+
+  .guest-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .check {
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    padding: 0.15rem 0; /* taller tap target */
+  }
+
+  .check .box {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Bigger, thumb-friendly delete button (≈44px). */
+  .remove {
+    width: 42px;
+    height: 42px;
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 340px) {
+  /* Tiny phones: drop the checkbox text, keep the colored boxes + stats. */
+  .check-label {
+    display: none;
+  }
+
+  .guest-actions {
+    justify-content: flex-start;
+    gap: 1.5rem;
   }
 }

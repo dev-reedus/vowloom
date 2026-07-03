@@ -196,9 +196,7 @@ export default function App() {
         )}
       </ul>
 
-      <footer className="foot">
-        {t.madeWith} · {new Date().getFullYear()}
-      </footer>
+      <footer className="foot">Nozze di Marius e Giorgiana - 2026</footer>
     </div>
   )
 }

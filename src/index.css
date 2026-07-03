@@ -32,11 +32,13 @@ body {
     linear-gradient(160deg, var(--blush) 0%, var(--white) 55%, var(--blush) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* guard against transient scroll from list animations */
 }
 
 button {
   font-family: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 input {
