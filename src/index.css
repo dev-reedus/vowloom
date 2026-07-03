@@ -1,0 +1,44 @@
+:root {
+  --blush: #f7ede8;
+  --blush-deep: #ecd9d0;
+  --rose: #c99a9a;
+  --rose-deep: #b07d7d;
+  --gold: #c2a878;
+  --gold-deep: #a68a56;
+  --ink: #5a4a45;
+  --ink-soft: #8a7873;
+  --white: #fffcfa;
+  --sent: #b9a15f;
+  --accepted: #8fae86;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 12%, rgba(201, 154, 154, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 88%, rgba(194, 168, 120, 0.16), transparent 42%),
+    linear-gradient(160deg, var(--blush) 0%, var(--white) 55%, var(--blush) 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}

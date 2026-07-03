@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+.git
+.idea
+*.log
+.DS_Store
+Dockerfile
+.dockerignore
+deploy.sh

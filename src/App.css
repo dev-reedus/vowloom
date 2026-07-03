@@ -1,0 +1,290 @@
+.page {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 4rem;
+}
+
+/* ---------- Language toggle ---------- */
+.lang-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--rose-deep);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  box-shadow: 0 6px 16px rgba(176, 125, 125, 0.14);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.kicker {
+  margin: 0 0 0.25rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.script {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: clamp(3.4rem, 12vw, 5.5rem);
+  line-height: 1;
+  margin: 0.2rem 0;
+  color: var(--rose-deep);
+  text-shadow: 0 2px 12px rgba(176, 125, 125, 0.18);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.6rem auto 0.5rem;
+  max-width: 260px;
+}
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.heart {
+  width: 20px;
+  height: 20px;
+  fill: var(--rose);
+  animation: beat 2.4s ease-in-out infinite;
+}
+
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+/* ---------- Stats ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.stat {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(194, 168, 120, 0.35);
+  border-radius: 16px;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 24px rgba(176, 125, 125, 0.08);
+}
+
+.stat-value {
+  display: block;
+  font-size: 2.2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.stat--sent .stat-value { color: var(--sent); }
+.stat--accepted .stat-value { color: var(--accepted); }
+
+.stat-label {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+/* ---------- Add form ---------- */
+.add-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.75rem;
+}
+
+.add-form input {
+  flex: 1;
+  padding: 0.85rem 1.1rem;
+  font-size: 1.1rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.add-form input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(194, 168, 120, 0.18);
+}
+
+.add-form button {
+  padding: 0 1.8rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(176, 125, 125, 0.35);
+}
+
+/* ---------- Guest list ---------- */
+.guest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.guest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(236, 217, 208, 0.9);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(176, 125, 125, 0.08);
+}
+
+.guest-name {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ---------- Checkbox ---------- */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.check .box {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--blush-deep);
+  background: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.check .box svg {
+  width: 18px;
+  height: 18px;
+  color: var(--white);
+}
+
+.check--sent.is-on .box {
+  background: var(--sent);
+  border-color: var(--sent);
+}
+
+.check--accepted.is-on .box {
+  background: var(--accepted);
+  border-color: var(--accepted);
+}
+
+.check.is-on .check-label {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- Remove ---------- */
+.remove {
+  width: 30px;
+  height: 30px;
+  line-height: 1;
+  font-size: 1.4rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  transition: color 0.2s, background 0.2s;
+}
+
+.remove:hover {
+  color: var(--rose-deep);
+  background: rgba(201, 154, 154, 0.14);
+}
+
+/* ---------- Misc ---------- */
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  font-style: italic;
+}
+
+.foot {
+  text-align: center;
+  margin-top: 3rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .guest {
+    justify-content: flex-start;
+  }
+  .guest-name {
+    width: 100%;
+  }
+}
