@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
   const [name, setName] = useState('')
+  const [query, setQuery] = useState('')
 
   const stats = useMemo(
     () => ({
@@ -12,6 +13,14 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
     }),
     [guests],
   )
+
+  // Filter by search text, then sort alphabetically (accent/case-insensitive).
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return guests
+      .filter((g) => !q || g.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  }, [guests, query])
 
   function onSubmit(e) {
     e.preventDefault()
@@ -73,9 +82,28 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         </motion.button>
       </motion.form>
 
+      <div className="search-box">
+        <svg className="search-ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.searchPlaceholder}
+          aria-label={t.searchPlaceholder}
+        />
+      </div>
+
       <ul className="guest-list">
         <AnimatePresence initial={false}>
-          {guests.map((guest) => (
+          {visible.map((guest) => (
             <motion.li
               key={guest.id}
               className="guest"
@@ -116,6 +144,11 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         {!loading && guests.length === 0 && (
           <motion.li className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {t.empty}
+          </motion.li>
+        )}
+        {!loading && guests.length > 0 && visible.length === 0 && (
+          <motion.li className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {t.noResults}
           </motion.li>
         )}
       </ul>

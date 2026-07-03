@@ -12,6 +12,8 @@ export const translations = {
     accepted: 'Confermato',
     remove: (name) => `Rimuovi ${name}`,
     empty: 'Nessun invitato — aggiungi il primo qui sopra.',
+    searchPlaceholder: 'Cerca un invitato…',
+    noResults: 'Nessun risultato.',
     langLabel: 'EN',
 
     // navigation
@@ -55,6 +57,8 @@ export const translations = {
     accepted: 'Accepted',
     remove: (name) => `Remove ${name}`,
     empty: 'No guests yet — add your first above.',
+    searchPlaceholder: 'Search a guest…',
+    noResults: 'No results.',
     langLabel: 'IT',
 
     // navigation
