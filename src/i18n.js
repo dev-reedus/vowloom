@@ -43,6 +43,8 @@ export const translations = {
     atTable: 'A questo tavolo',
     tableNamePlaceholder: 'Nome tavolo',
     seatsWord: 'posti',
+    printList: 'Stampa lista',
+    printCards: 'Segnaposti',
   },
   en: {
     kicker: 'Together with joy, we invite you',
@@ -88,6 +90,8 @@ export const translations = {
     atTable: 'At this table',
     tableNamePlaceholder: 'Table name',
     seatsWord: 'seats',
+    printList: 'Print list',
+    printCards: 'Place cards',
   },
 }
 

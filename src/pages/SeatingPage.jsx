@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const partySize = (g) => g.party_size || 1
@@ -44,6 +44,19 @@ export default function SeatingPage({
   const [drag, setDrag] = useState(null) // { id, x, y } while moving a table
   const [newLabel, setNewLabel] = useState('')
   const [newSeats, setNewSeats] = useState(10)
+  const [printKind, setPrintKind] = useState(null) // null | 'chart' | 'cards'
+
+  // Render the chosen print sheet, fire the browser print dialog, then reset.
+  useEffect(() => {
+    if (!printKind) return
+    const reset = () => setPrintKind(null)
+    window.addEventListener('afterprint', reset)
+    const id = setTimeout(() => window.print(), 80)
+    return () => {
+      window.removeEventListener('afterprint', reset)
+      clearTimeout(id)
+    }
+  }, [printKind])
 
   function createTable() {
     addTable({
@@ -166,6 +179,11 @@ export default function SeatingPage({
             {t.modeLayout}
           </button>
         </div>
+
+        <div className="print-actions">
+          <button onClick={() => setPrintKind('chart')}>🖨 {t.printList}</button>
+          <button onClick={() => setPrintKind('cards')}>🖨 {t.printCards}</button>
+        </div>
       </header>
 
       {/* ---- room / floorplan ---- */}
@@ -177,7 +195,17 @@ export default function SeatingPage({
         onPointerLeave={onTablePointerUp}
       >
         <svg className="room-shape" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polygon points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 25.8,79.4 25.8,38.3 0,38.3" />
+          {/* floor tint */}
+          <polygon
+            className="room-floor"
+            points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 25.8,79.4 25.8,38.3 0,38.3"
+          />
+          {/* walls as segments, leaving gaps for the CUCINE + INGRESSO doorways */}
+          <g className="room-walls">
+            <polyline points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 59.5,79.4" />
+            <line x1="54.5" y1="79.4" x2="35.5" y2="79.4" />
+            <polyline points="30.5,79.4 25.8,79.4 25.8,38.3 0,38.3 0,0" />
+          </g>
         </svg>
         <span className="room-label" style={{ left: '26%', top: '50%' }}>Focolare</span>
         <span className="room-label" style={{ left: '33%', top: '82%' }}>CUCINE</span>
@@ -361,6 +389,72 @@ export default function SeatingPage({
           {unassigned.length === 0 && <p className="muted">{t.allSeated}</p>}
         </div>
       </section>
+
+      {/* ---- print sheets (hidden on screen, shown when printing) ---- */}
+      {printKind && (
+        <div className="print-area">
+          {printKind === 'chart' ? (
+            <PrintChart guests={guests} tables={tables} />
+          ) : (
+            <PrintCards guests={guests} tables={tables} />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const tableNum = (label) => {
+  const m = String(label).match(/\d+/)
+  return m ? Number(m[0]) : Number.POSITIVE_INFINITY
+}
+const bySeatThenName = (a, b) =>
+  (a.seat_index ?? 99) - (b.seat_index ?? 99) || a.name.localeCompare(b.name)
+
+function PrintChart({ guests, tables }) {
+  const sorted = [...tables].sort((a, b) => tableNum(a.label) - tableNum(b.label))
+  return (
+    <div className="print-chart">
+      <h1 className="print-title">Nozze di Marius e Giorgiana</h1>
+      <div className="pc-grid">
+        {sorted.map((tb) => {
+          const gs = guests.filter((g) => g.table_id === tb.id).sort(bySeatThenName)
+          const occ = gs.reduce((s, g) => s + (g.party_size || 1), 0)
+          return (
+            <div className="pc-table" key={tb.id}>
+              <h2>
+                {tb.label} <span>{occ}/{tb.seats}</span>
+              </h2>
+              <ol>
+                {gs.map((g) => (
+                  <li key={g.id}>
+                    {g.name}
+                    {(g.party_size || 1) > 1 ? ` (${g.party_size})` : ''}
+                  </li>
+                ))}
+              </ol>
+              {gs.length === 0 && <p className="pc-empty">—</p>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function PrintCards({ guests, tables }) {
+  const labelOf = (id) => tables.find((t) => t.id === id)?.label || ''
+  const seated = guests
+    .filter((g) => g.table_id != null)
+    .sort((a, b) => a.name.localeCompare(b.name))
+  return (
+    <div className="print-cards">
+      {seated.map((g) => (
+        <div className="place-card" key={g.id}>
+          <div className="pcard-name">{g.name}</div>
+          <div className="pcard-table">{labelOf(g.table_id)}</div>
+        </div>
+      ))}
     </div>
   )
 }

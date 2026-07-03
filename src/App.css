@@ -727,11 +727,18 @@
   pointer-events: none;
 }
 
-.room-shape polygon {
+.room-floor {
   fill: rgba(255, 255, 255, 0.55);
+  stroke: none;
+}
+
+.room-walls polyline,
+.room-walls line {
+  fill: none;
   stroke: var(--ink-soft);
   stroke-width: 2;
   stroke-linejoin: round;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke; /* even wall thickness despite stretch */
 }
 
@@ -879,3 +886,99 @@
 }
 
 .search-box input::placeholder { color: var(--ink-soft); }
+
+/* ---------- Print buttons ---------- */
+.print-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.print-actions button {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: var(--gold-deep);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(194, 168, 120, 0.5);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+@media (hover: hover) {
+  .print-actions button:hover { background: rgba(255, 255, 255, 0.95); }
+}
+
+/* ---------- Print sheets ---------- */
+.print-area { display: none; }
+
+.print-title {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: 34pt;
+  text-align: center;
+  color: #b07d7d;
+  margin: 0 0 8mm;
+}
+
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6mm 10mm;
+}
+
+.pc-table {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  border: 1px solid #d8c4b8;
+  border-radius: 6px;
+  padding: 4mm 5mm;
+}
+
+.pc-table h2 {
+  margin: 0 0 2mm;
+  font-size: 13pt;
+  color: #5a4a45;
+  border-bottom: 1px solid #ecd9d0;
+  padding-bottom: 1.5mm;
+}
+.pc-table h2 span { float: right; color: #a68a56; font-size: 11pt; }
+.pc-table ol { margin: 0; padding-left: 6mm; }
+.pc-table li { font-size: 11pt; line-height: 1.5; }
+.pc-empty { color: #999; margin: 0; }
+
+.print-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8mm;
+}
+
+.place-card {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  height: 48mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid #d8c4b8;
+  border-radius: 8px;
+}
+.pcard-name { font-size: 17pt; color: #5a4a45; font-family: 'Cormorant Garamond', serif; }
+.pcard-table { margin-top: 4mm; font-size: 12pt; letter-spacing: 0.08em; color: #b07d7d; }
+
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+  }
+}
