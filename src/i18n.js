@@ -39,6 +39,8 @@ export const translations = {
     noSeat: 'senza posto',
     seatHint: 'Seleziona un invitato, poi tocca una sedia',
     atTable: 'A questo tavolo',
+    tableNamePlaceholder: 'Nome tavolo',
+    seatsWord: 'posti',
   },
   en: {
     kicker: 'Together with joy, we invite you',
@@ -80,6 +82,8 @@ export const translations = {
     noSeat: 'no seat',
     seatHint: 'Select a guest, then tap a chair',
     atTable: 'At this table',
+    tableNamePlaceholder: 'Table name',
+    seatsWord: 'seats',
   },
 }
 

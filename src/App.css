@@ -515,8 +515,8 @@
 .table-node.draggable { cursor: grab; touch-action: none; }
 .table-node.draggable:active { cursor: grabbing; }
 
-.table-label { font-size: 0.8rem; font-weight: 600; line-height: 1.05; }
-.table-occ { font-size: 0.72rem; color: var(--ink-soft); }
+.table-label { font-size: 0.68rem; font-weight: 600; line-height: 1.03; }
+.table-occ { font-size: 0.62rem; color: var(--ink-soft); }
 .table-occ.over { color: #c0392b; font-weight: 600; }
 
 .table-del {
@@ -710,3 +710,135 @@
 
 .chip.noseat { opacity: 0.85; border-style: dashed; }
 .chip .tag { color: var(--ink-soft); font-style: italic; font-size: 0.85em; }
+
+/* ---- room = wall perimeter only, horizontal (overrides generic .room) ---- */
+.room {
+  aspect-ratio: 1625 / 900;   /* traced from the landscape floorplan */
+  background: transparent;
+  border: none;
+  overflow: visible;           /* let wall stroke / labels show fully */
+}
+
+.room-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.room-shape polygon {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: var(--ink-soft);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; /* even wall thickness despite stretch */
+}
+
+.room-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: var(--ink-soft);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.room-label.soft {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ---- create-table form ---- */
+.table-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin: -0.5rem 0 1.5rem;
+}
+
+.table-form .tf-name {
+  flex: 0 1 180px;
+  min-width: 110px;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 999px;
+  outline: none;
+}
+
+.table-form .tf-seats {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.table-form .tf-seats input {
+  width: 3.5ch;
+  padding: 0.25rem 0;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--ink);
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.table-form .tf-seats input::-webkit-outer-spin-button,
+.table-form .tf-seats input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.table-form .tf-add {
+  padding: 0.6rem 1.3rem;
+  border: none;
+  border-radius: 999px;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  box-shadow: 0 4px 12px rgba(176, 125, 125, 0.3);
+  font-size: 1rem;
+}
+
+/* ---- seat-count editor in the open-table header ---- */
+.seat-count-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.6rem;
+  vertical-align: middle;
+}
+
+.seat-count-edit button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(194, 168, 120, 0.5);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.seat-count-edit .scn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  min-width: 4.5ch;
+  text-align: center;
+}

@@ -111,21 +111,38 @@ export function seedIfEmpty() {
   return { seeded: guests.length, reason: 'seeded' }
 }
 
-// A few example tables so the seating page has something to show before the
-// real floorplan is provided. Only runs when there are no tables yet.
+// The real tables from the room floorplan (Tav. 11–32), positioned to match
+// the blueprint underlay. Seat counts are a sensible default (editable in the
+// app). Only runs when there are no tables yet.
 export function seedTablesIfEmpty() {
   const { count } = db.prepare('SELECT COUNT(*) AS count FROM tables').get()
   if (count > 0) return { seeded: 0 }
 
-  const rows = [{ label: 'Sposi', seats: 2, x: 0.5, y: 0.12 }]
-  const cols = [0.2, 0.4, 0.6, 0.8]
-  const rowsY = [0.4, 0.72]
-  let n = 1
-  for (const y of rowsY) for (const x of cols) rows.push({ label: `Tavolo ${n++}`, seats: 8, x, y })
+  // Positions traced from the (landscape) room floorplan, normalized to the
+  // room's bounding box.
+  const rows = [
+    { label: 'Tav. 11', x: 0.089, y: 0.294 },
+    { label: 'Tav. 14', x: 0.206, y: 0.289 },
+    { label: 'Tav. 15', x: 0.332, y: 0.144 },
+    { label: 'Tav. 16', x: 0.32, y: 0.406 },
+    { label: 'Tav. 18', x: 0.351, y: 0.606 },
+    { label: 'Tav. 23', x: 0.477, y: 0.644 },
+    { label: 'Tav. 19', x: 0.577, y: 0.111 },
+    { label: 'Tav. 21', x: 0.62, y: 0.356 },
+    { label: 'Tav. 24', x: 0.603, y: 0.567 },
+    { label: 'Tav. 25', x: 0.768, y: 0.111 },
+    { label: 'Tav. 31', x: 0.854, y: 0.222 },
+    { label: 'Tav. 27', x: 0.774, y: 0.444 },
+    { label: 'Tav. 29', x: 0.772, y: 0.711 },
+    { label: 'Tav. 26', x: 0.953, y: 0.106 },
+    { label: 'Tav. 28', x: 0.943, y: 0.4 },
+    { label: 'Tav. 32', x: 0.862, y: 0.578 },
+    { label: 'Tav. 30', x: 0.945, y: 0.644 },
+  ]
 
   const insert = db.prepare('INSERT INTO tables (label, seats, x, y) VALUES (?, ?, ?, ?)')
   db.transaction(() => {
-    for (const r of rows) insert.run(r.label, r.seats, r.x, r.y)
+    for (const r of rows) insert.run(r.label, 10, r.x, r.y)
   })()
   return { seeded: rows.length }
 }
@@ -211,7 +228,7 @@ export function addTable(fields = {}) {
     .run(
       fields.label || 'Tavolo',
       fields.shape === 'rect' ? 'rect' : 'round',
-      Math.max(1, Number(fields.seats) || 8),
+      Math.max(1, Number(fields.seats) || 10),
       fields.x ?? 0.5,
       fields.y ?? 0.5,
     )

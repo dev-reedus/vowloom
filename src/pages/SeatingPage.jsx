@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const partySize = (g) => g.party_size || 1
-const tableSize = (seats) => 62 + seats * 3 // px diameter in the overview
+const tableSize = (seats) => 42 + seats * 2.2 // px diameter in the overview
 
 // Short label for a chair: first up-to-2 letters of the party name.
 function initials(name) {
@@ -42,6 +42,18 @@ export default function SeatingPage({
   const [selectedGuestId, setSelectedGuestId] = useState(null)
   const [openTableId, setOpenTableId] = useState(null)
   const [drag, setDrag] = useState(null) // { id, x, y } while moving a table
+  const [newLabel, setNewLabel] = useState('')
+  const [newSeats, setNewSeats] = useState(10)
+
+  function createTable() {
+    addTable({
+      label: newLabel.trim() || `Tav. ${tables.length + 1}`,
+      seats: Math.max(1, Number(newSeats) || 10),
+      x: 0.5,
+      y: 0.5,
+    })
+    setNewLabel('')
+  }
 
   // Only confirmed (accepted) guests can be seated.
   const unassigned = guests.filter((g) => g.accepted && g.table_id == null)
@@ -164,6 +176,13 @@ export default function SeatingPage({
         onPointerUp={onTablePointerUp}
         onPointerLeave={onTablePointerUp}
       >
+        <svg className="room-shape" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polygon points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 25.8,79.4 25.8,38.3 0,38.3" />
+        </svg>
+        <span className="room-label" style={{ left: '26%', top: '50%' }}>Focolare</span>
+        <span className="room-label" style={{ left: '33%', top: '82%' }}>CUCINE</span>
+        <span className="room-label" style={{ left: '57%', top: '82%' }}>INGRESSO INVITATI</span>
+
         {tables.length === 0 && <p className="room-empty">{t.emptyTables}</p>}
 
         {tables.map((tb) => {
@@ -214,12 +233,31 @@ export default function SeatingPage({
           )
         })}
 
-        {mode === 'layout' && (
-          <button className="add-table" onClick={() => addTable({ x: 0.5, y: 0.5 })}>
+      </div>
+
+      {/* ---- create-table form (layout mode) ---- */}
+      {mode === 'layout' && (
+        <div className="table-form">
+          <input
+            className="tf-name"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder={t.tableNamePlaceholder}
+          />
+          <label className="tf-seats">
+            <input
+              type="number"
+              min="1"
+              value={newSeats}
+              onChange={(e) => setNewSeats(e.target.value)}
+            />
+            <span>{t.seatsWord}</span>
+          </label>
+          <button className="tf-add" onClick={createTable}>
             {t.addTable}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ---- open table: seat map ---- */}
       <AnimatePresence>
@@ -232,6 +270,25 @@ export default function SeatingPage({
           >
             <h3>
               {openTable.label} · {occupancyOf(openTable.id)}/{openTable.seats}
+              <span className="seat-count-edit">
+                <button
+                  onClick={() =>
+                    updateTable(openTable.id, { seats: Math.max(1, openTable.seats - 1) })
+                  }
+                  aria-label="-"
+                >
+                  −
+                </button>
+                <span className="scn">
+                  {openTable.seats} {t.seatsWord}
+                </span>
+                <button
+                  onClick={() => updateTable(openTable.id, { seats: openTable.seats + 1 })}
+                  aria-label="+"
+                >
+                  +
+                </button>
+              </span>
             </h3>
             <p className="seat-hint">{t.seatHint}</p>
 
