@@ -363,6 +363,19 @@
   }
 }
 
+@media (max-width: 360px) {
+  /* Very narrow phones: stack the Add button under the input so the field
+     stays wide enough to type in. */
+  .add-form {
+    flex-direction: column;
+  }
+
+  .add-form button {
+    width: 100%;
+    padding: 0.8rem 1.3rem;
+  }
+}
+
 @media (max-width: 340px) {
   /* Tiny phones: drop the checkbox text, keep the colored boxes + stats. */
   .check-label {
