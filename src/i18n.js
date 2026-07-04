@@ -14,6 +14,9 @@ export const translations = {
     empty: 'Nessun invitato — aggiungi il primo qui sopra.',
     searchPlaceholder: 'Cerca un invitato…',
     noResults: 'Nessun risultato.',
+    filterAll: 'Tutti',
+    filterNotSent: 'Non spediti',
+    filterNotConfirmed: 'Non confermati',
     langLabel: 'EN',
 
     // navigation
@@ -61,6 +64,9 @@ export const translations = {
     empty: 'No guests yet — add your first above.',
     searchPlaceholder: 'Search a guest…',
     noResults: 'No results.',
+    filterAll: 'All',
+    filterNotSent: 'Not sent',
+    filterNotConfirmed: 'Not confirmed',
     langLabel: 'IT',
 
     // navigation

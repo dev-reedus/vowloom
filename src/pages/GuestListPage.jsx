@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
   const [name, setName] = useState('')
   const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('all') // 'all' | 'notSent' | 'notAccepted'
 
   const stats = useMemo(
     () => ({
@@ -14,13 +15,19 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
     [guests],
   )
 
-  // Filter by search text, then sort alphabetically (accent/case-insensitive).
+  // Filter by search text + status, then sort alphabetically.
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return guests
       .filter((g) => !q || g.name.toLowerCase().includes(q))
+      .filter(
+        (g) =>
+          filter === 'all' ||
+          (filter === 'notSent' && !g.sent) ||
+          (filter === 'notAccepted' && !g.accepted),
+      )
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-  }, [guests, query])
+  }, [guests, query, filter])
 
   function onSubmit(e) {
     e.preventDefault()
@@ -99,6 +106,24 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
           placeholder={t.searchPlaceholder}
           aria-label={t.searchPlaceholder}
         />
+      </div>
+
+      <div className="filters">
+        <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
+          {t.filterAll}
+        </button>
+        <button
+          className={filter === 'notSent' ? 'on' : ''}
+          onClick={() => setFilter('notSent')}
+        >
+          {t.filterNotSent}
+        </button>
+        <button
+          className={filter === 'notAccepted' ? 'on' : ''}
+          onClick={() => setFilter('notAccepted')}
+        >
+          {t.filterNotConfirmed}
+        </button>
       </div>
 
       <ul className="guest-list">

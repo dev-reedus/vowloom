@@ -982,3 +982,29 @@
     color: #000;
   }
 }
+
+/* ---------- List filters ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.filters button {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(194, 168, 120, 0.4);
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.filters button.on {
+  color: var(--white);
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(176, 125, 125, 0.28);
+}
