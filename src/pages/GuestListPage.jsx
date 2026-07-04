@@ -4,16 +4,27 @@ import { AnimatePresence, motion } from 'framer-motion'
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
   const [name, setName] = useState('')
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('all') // 'all' | 'notSent' | 'notAccepted'
+  const [showStats, setShowStats] = useState(false)
+  // 'all' | 'notSent' | 'pending' | 'accepted' | 'maybe' | 'declined'
+  const [filter, setFilter] = useState('all')
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    const by = (s) => guests.filter((g) => g.reply_status === s).length
+    const heads = (s) =>
+      guests.filter((g) => g.reply_status === s).reduce((n, g) => n + (g.party_size || 1), 0)
+    return {
       total: guests.length,
       sent: guests.filter((g) => g.sent).length,
-      accepted: guests.filter((g) => g.accepted).length,
-    }),
-    [guests],
-  )
+      accepted: by('accepted'),
+      maybe: by('maybe'),
+      declined: by('declined'),
+      pending: by('pending'),
+      headsAccepted: heads('accepted'),
+      headsMaybe: heads('maybe'),
+    }
+  }, [guests])
+
+  const STATUS_FILTERS = ['pending', 'accepted', 'maybe', 'declined']
 
   // Filter by search text + status, then sort alphabetically.
   const visible = useMemo(() => {
@@ -24,7 +35,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         (g) =>
           filter === 'all' ||
           (filter === 'notSent' && !g.sent) ||
-          (filter === 'notAccepted' && !g.accepted),
+          (STATUS_FILTERS.includes(filter) && g.reply_status === filter),
       )
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
   }, [guests, query, filter])
@@ -69,6 +80,40 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         <Stat label={t.sentCount} value={stats.sent} accent="sent" />
         <Stat label={t.acceptedCount} value={stats.accepted} accent="accepted" />
       </motion.section>
+
+      <div className="stats-more">
+        <button
+          type="button"
+          className={`stats-toggle ${showStats ? 'open' : ''}`}
+          aria-expanded={showStats}
+          onClick={() => setShowStats((v) => !v)}
+        >
+          {showStats ? t.statsLess : t.statsMore}
+          <span className="chev" aria-hidden="true">▾</span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {showStats && (
+            <motion.section
+              className="stats stats--extra"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Stat label={t.maybeCount} value={stats.maybe} accent="maybe" />
+              <Stat label={t.declinedCount} value={stats.declined} accent="declined" />
+              <Stat label={t.pendingCount} value={stats.pending} accent="pending" />
+              <Stat
+                label={t.headsCount}
+                value={stats.headsAccepted}
+                accent="heads"
+                hint={stats.headsMaybe > 0 ? t.maybeHeadsHint(stats.headsMaybe) : null}
+              />
+            </motion.section>
+          )}
+        </AnimatePresence>
+      </div>
 
       <motion.form
         className="add-form"
@@ -118,11 +163,17 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         >
           {t.filterNotSent}
         </button>
-        <button
-          className={filter === 'notAccepted' ? 'on' : ''}
-          onClick={() => setFilter('notAccepted')}
-        >
-          {t.filterNotConfirmed}
+        <button className={filter === 'pending' ? 'on' : ''} onClick={() => setFilter('pending')}>
+          {t.filterPending}
+        </button>
+        <button className={filter === 'accepted' ? 'on' : ''} onClick={() => setFilter('accepted')}>
+          {t.filterAccepted}
+        </button>
+        <button className={filter === 'maybe' ? 'on' : ''} onClick={() => setFilter('maybe')}>
+          {t.filterMaybe}
+        </button>
+        <button className={filter === 'declined' ? 'on' : ''} onClick={() => setFilter('declined')}>
+          {t.filterDeclined}
         </button>
       </div>
 
@@ -131,37 +182,49 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
           {visible.map((guest) => (
             <motion.li
               key={guest.id}
-              className="guest"
+              className={`guest guest--${guest.reply_status}`}
               layout
               initial={{ opacity: 0, y: -12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, x: 40, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             >
-              <span className="guest-name">{guest.name}</span>
+              {/* Colored spine: re-keys on status change to replay the grow. */}
+              <motion.span
+                className="guest-spine"
+                key={guest.reply_status}
+                initial={{ scaleY: 0.3, opacity: 0.4 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+              />
+              <div className="guest-body">
+                <span className="guest-name" title={guest.name}>
+                  {guest.name}
+                </span>
 
-              <div className="guest-actions">
-                <Check
-                  label={t.sent}
-                  checked={guest.sent}
-                  accent="sent"
-                  onChange={() => toggle(guest, 'sent')}
-                />
-                <Check
-                  label={t.accepted}
-                  checked={guest.accepted}
-                  accent="accepted"
-                  onChange={() => toggle(guest, 'accepted')}
-                />
-                <button
-                  className="remove"
-                  onClick={() => removeGuest(guest.id)}
-                  aria-label={t.remove(guest.name)}
-                  title={t.remove(guest.name)}
-                >
-                  ×
-                </button>
+                <div className="guest-actions">
+                  <Check
+                    label={t.sent}
+                    checked={guest.sent}
+                    accent="sent"
+                    onChange={() => toggle(guest, 'sent')}
+                  />
+                  <StatusSelect
+                    t={t}
+                    status={guest.reply_status}
+                    onChange={(reply_status) => updateGuest(guest.id, { reply_status })}
+                  />
+                </div>
               </div>
+
+              <button
+                className="remove"
+                onClick={() => removeGuest(guest.id)}
+                aria-label={t.remove(guest.name)}
+                title={t.remove(guest.name)}
+              >
+                ×
+              </button>
             </motion.li>
           ))}
         </AnimatePresence>
@@ -181,7 +244,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
   )
 }
 
-function Stat({ label, value, accent }) {
+function Stat({ label, value, accent, hint }) {
   return (
     <div className={`stat ${accent ? `stat--${accent}` : ''}`}>
       <motion.span
@@ -194,6 +257,37 @@ function Stat({ label, value, accent }) {
         {value}
       </motion.span>
       <span className="stat-label">{label}</span>
+      {hint && <span className="stat-hint">{hint}</span>}
+    </div>
+  )
+}
+
+// Three-way reply status control. No button active means the guest is still
+// 'pending'; clicking the active status returns them to pending.
+function StatusSelect({ t, status, onChange }) {
+  const opts = [
+    { key: 'accepted', short: t.btnYes, title: t.statusAccepted },
+    { key: 'maybe', short: t.btnMaybe, title: t.statusMaybe },
+    { key: 'declined', short: t.btnNo, title: t.statusDeclined },
+  ]
+  return (
+    <div className="status-select" role="group" aria-label={t.statusPending}>
+      {opts.map((o) => {
+        const on = status === o.key
+        return (
+          <motion.button
+            key={o.key}
+            type="button"
+            className={`status-btn status-btn--${o.key} ${on ? 'on' : ''}`}
+            aria-pressed={on}
+            title={o.title}
+            whileTap={{ scale: 0.88 }}
+            onClick={() => onChange(on ? 'pending' : o.key)}
+          >
+            {o.short}
+          </motion.button>
+        )
+      })}
     </div>
   )
 }

@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "start": "node server/index.js",
-    "server": "node server/index.js"
+    "server": "node server/index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

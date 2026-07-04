@@ -4,8 +4,12 @@ A small, elegant React app to track wedding invitations. For each guest you get:
 
 - their **name**,
 - an **Invitation Sent** checkbox,
-- an **Accepted** checkbox,
+- a **reply status** — *pending · accepted · maybe · declined*,
 - and a form to **add new guests**.
+
+The guest list shows a **stats dashboard** (counts per status plus a confirmed
+headcount), and the seating plan flags **over-capacity tables** and guests who
+still need a seat (both *accepted* and *maybe* guests count toward capacity).
 
 Styled for a wedding (blush + gold, script headings) with soft animations
 via [framer-motion](https://www.framer.com/motion/).

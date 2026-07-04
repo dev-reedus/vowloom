@@ -10,6 +10,9 @@
   --white: #fffcfa;
   --sent: #b9a15f;
   --accepted: #8fae86;
+  --maybe: #d0a24e;
+  --declined: #b98d8d;
+  --pending: #a99a94;
 }
 
 * {

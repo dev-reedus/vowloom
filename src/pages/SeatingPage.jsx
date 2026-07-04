@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const partySize = (g) => g.party_size || 1
+// Accepted and "maybe" guests both need a seat and count toward capacity.
+const needsSeat = (g) => g.reply_status === 'accepted' || g.reply_status === 'maybe'
 const tableSize = (seats) => 42 + seats * 2.2 // px diameter in the overview
 
 // Short label for a chair: first up-to-2 letters of the party name.
@@ -68,19 +70,27 @@ export default function SeatingPage({
     setNewLabel('')
   }
 
-  // Only confirmed (accepted) guests can be seated.
-  const unassigned = guests.filter((g) => g.accepted && g.table_id == null)
+  // Guests who need a seat: accepted OR maybe.
+  const unassigned = guests.filter((g) => needsSeat(g) && g.table_id == null)
   const totalPeople = guests
-    .filter((g) => g.accepted)
+    .filter((g) => needsSeat(g))
     .reduce((s, g) => s + partySize(g), 0)
   const seatedPeople = guests
-    .filter((g) => g.accepted && g.table_id != null)
+    .filter((g) => needsSeat(g) && g.table_id != null)
     .reduce((s, g) => s + partySize(g), 0)
 
+  // Capacity math counts only guests who need a seat; a guest who has since
+  // declined but is still parked at a table is flagged, not counted (below).
   const occupancyOf = (id) =>
-    guests.filter((g) => g.table_id === id).reduce((s, g) => s + partySize(g), 0)
+    guests.filter((g) => g.table_id === id && needsSeat(g)).reduce((s, g) => s + partySize(g), 0)
   const guestsAt = (id) => guests.filter((g) => g.table_id === id)
   const openTable = tables.find((tb) => tb.id === openTableId) || null
+
+  // ---- validation summary (shown as a banner when there are issues) ----
+  const overTablesCount = tables.filter((tb) => occupancyOf(tb.id) > tb.seats).length
+  const toSeatPeople = unassigned.reduce((s, g) => s + partySize(g), 0)
+  const staleSeated = guests.filter((g) => g.table_id != null && !needsSeat(g)).length
+  const hasIssues = overTablesCount > 0 || toSeatPeople > 0 || staleSeated > 0
 
   // ---- assignment helpers ----
   // Seat a party starting at a chair; only if it fits in free consecutive seats.
@@ -185,6 +195,24 @@ export default function SeatingPage({
           <button onClick={() => setPrintKind('cards')}>🖨 {t.printCards}</button>
         </div>
       </header>
+
+      <AnimatePresence>
+        {hasIssues && (
+          <motion.div
+            className="seating-validation"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
+            <span className="val-ico" aria-hidden="true">⚠</span>
+            <ul>
+              {overTablesCount > 0 && <li>{t.valOverTables(overTablesCount)}</li>}
+              {toSeatPeople > 0 && <li>{t.valToSeat(toSeatPeople)}</li>}
+              {staleSeated > 0 && <li>{t.valStale(staleSeated)}</li>}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ---- room / floorplan ---- */}
       <div
@@ -379,6 +407,7 @@ export default function SeatingPage({
               <GuestChip
                 key={g.id}
                 guest={g}
+                t={t}
                 selected={selectedGuestId === g.id}
                 onSelect={() => setSelectedGuestId((cur) => (cur === g.id ? null : g.id))}
                 onDropAt={(x, y) => dropByPoint(g, x, y)}
@@ -502,13 +531,15 @@ function SeatMap({ table, guests, t, selectedGuestId, onSeatClick }) {
   )
 }
 
-function GuestChip({ guest, selected, onSelect, onDropAt, updateGuest }) {
+function GuestChip({ guest, t, selected, onSelect, onDropAt, updateGuest }) {
   const ref = useRef(null)
   return (
     <motion.div
       ref={ref}
       layout
-      className={`chip draggable ${selected ? 'selected' : ''}`}
+      className={`chip draggable ${guest.reply_status === 'maybe' ? 'maybe' : ''} ${
+        selected ? 'selected' : ''
+      }`}
       drag
       dragSnapToOrigin
       whileDrag={{ scale: 1.06, zIndex: 30 }}
@@ -521,7 +552,10 @@ function GuestChip({ guest, selected, onSelect, onDropAt, updateGuest }) {
       }}
       onClick={onSelect}
     >
-      <span className="chip-name">{guest.name}</span>
+      <span className="chip-name">
+        {guest.name}
+        {guest.reply_status === 'maybe' && <em className="tag tag--maybe"> · {t.maybeTag}</em>}
+      </span>
       <PartyStepper guest={guest} updateGuest={updateGuest} />
     </motion.div>
   )

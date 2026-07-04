@@ -43,6 +43,11 @@ export function defaultPartySize(name) {
   return /\//.test(name) ? 2 : 1
 }
 
+// The four reply states. `pending` is the default until the guest replies.
+// `reply_status` is the source of truth; the legacy `accepted` column is kept
+// in sync (accepted = 1 only for 'accepted') so older read paths still work.
+export const REPLY_STATUSES = ['pending', 'accepted', 'maybe', 'declined']
+
 function columnExists(table, col) {
   return db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col)
 }
@@ -63,6 +68,12 @@ function migrate() {
   }
   if (!columnExists('guests', 'seat_index')) {
     db.exec('ALTER TABLE guests ADD COLUMN seat_index INTEGER')
+  }
+  if (!columnExists('guests', 'reply_status')) {
+    db.exec("ALTER TABLE guests ADD COLUMN reply_status TEXT NOT NULL DEFAULT 'pending'")
+    // backfill from the old boolean: accepted rows become 'accepted',
+    // everyone else stays 'pending'.
+    db.exec("UPDATE guests SET reply_status = 'accepted' WHERE accepted = 1")
   }
 }
 migrate()
@@ -104,9 +115,18 @@ export function seedIfEmpty() {
   if (!fs.existsSync(SEED_FILE)) return { seeded: 0, reason: 'no-seed-file' }
 
   const guests = parseGuestList(fs.readFileSync(SEED_FILE, 'utf8'))
-  const insert = db.prepare('INSERT INTO guests (name, sent, accepted, party_size) VALUES (?, ?, ?, ?)')
+  const insert = db.prepare(
+    'INSERT INTO guests (name, sent, accepted, reply_status, party_size) VALUES (?, ?, ?, ?, ?)',
+  )
   db.transaction((rows) => {
-    for (const g of rows) insert.run(g.name, g.sent ? 1 : 0, g.accepted ? 1 : 0, defaultPartySize(g.name))
+    for (const g of rows)
+      insert.run(
+        g.name,
+        g.sent ? 1 : 0,
+        g.accepted ? 1 : 0,
+        g.accepted ? 'accepted' : 'pending',
+        defaultPartySize(g.name),
+      )
   })(guests)
   return { seeded: guests.length, reason: 'seeded' }
 }
@@ -149,15 +169,19 @@ export function seedTablesIfEmpty() {
 
 // ---- guests: data access, returning app-shaped objects ----
 
-const toGuest = (row) => ({
-  id: row.id,
-  name: row.name,
-  sent: !!row.sent,
-  accepted: !!row.accepted,
-  party_size: row.party_size ?? 1,
-  table_id: row.table_id ?? null,
-  seat_index: row.seat_index ?? null,
-})
+const toGuest = (row) => {
+  const reply_status = REPLY_STATUSES.includes(row.reply_status) ? row.reply_status : 'pending'
+  return {
+    id: row.id,
+    name: row.name,
+    sent: !!row.sent,
+    reply_status,
+    accepted: reply_status === 'accepted', // derived, kept for older read paths
+    party_size: row.party_size ?? 1,
+    table_id: row.table_id ?? null,
+    seat_index: row.seat_index ?? null,
+  }
+}
 
 export function listGuests() {
   return db.prepare('SELECT * FROM guests ORDER BY id ASC').all().map(toGuest)
@@ -170,8 +194,9 @@ export function addGuest(name) {
   return toGuest(db.prepare('SELECT * FROM guests WHERE id = ?').get(info.lastInsertRowid))
 }
 
-// Update only the provided fields among a small allow-list.
-const GUEST_FIELDS = ['name', 'sent', 'accepted', 'party_size', 'table_id', 'seat_index']
+// Update only the provided fields among a small allow-list. `reply_status` is
+// the source of truth for the reply; `accepted` is derived from it below.
+const GUEST_FIELDS = ['name', 'sent', 'reply_status', 'party_size', 'table_id', 'seat_index']
 
 export function updateGuest(id, rawFields) {
   const current = db.prepare('SELECT * FROM guests WHERE id = ?').get(id)
@@ -181,18 +206,31 @@ export function updateGuest(id, rawFields) {
   // Moving a guest to a different table clears their old seat, unless a new
   // seat is being set in the same request.
   if ('table_id' in fields && !('seat_index' in fields)) fields.seat_index = null
+  // Backward compat: a legacy PATCH carrying `accepted` maps onto reply_status.
+  if ('accepted' in fields && !('reply_status' in fields)) {
+    fields.reply_status = fields.accepted ? 'accepted' : 'pending'
+  }
+  // Ignore an invalid reply_status rather than storing junk.
+  if ('reply_status' in fields && !REPLY_STATUSES.includes(fields.reply_status)) {
+    delete fields.reply_status
+  }
 
   const sets = []
   const values = []
   for (const key of GUEST_FIELDS) {
     if (!(key in fields)) continue
     let v = fields[key]
-    if (key === 'sent' || key === 'accepted') v = v ? 1 : 0
+    if (key === 'sent') v = v ? 1 : 0
     if (key === 'table_id') v = v == null ? null : Number(v)
     if (key === 'seat_index') v = v == null ? null : Number(v)
     if (key === 'party_size') v = Math.max(1, Number(v) || 1)
     sets.push(`${key} = ?`)
     values.push(v)
+  }
+  // Keep the legacy `accepted` column in sync with the new status.
+  if ('reply_status' in fields) {
+    sets.push('accepted = ?')
+    values.push(fields.reply_status === 'accepted' ? 1 : 0)
   }
   if (sets.length) {
     db.prepare(`UPDATE guests SET ${sets.join(', ')} WHERE id = ?`).run(...values, id)
