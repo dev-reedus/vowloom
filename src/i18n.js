@@ -47,6 +47,10 @@ export const translations = {
     navList: 'Lista',
     navSeating: 'Tavoli',
 
+    // backup
+    backup: 'Salva backup',
+    backupTitle: 'Scarica una copia del database (invitati e tavoli)',
+
     // seating page
     seatingTitle: 'Disposizione dei Tavoli',
     seatingSubtitle: 'Trascina gli invitati sui tavoli',
@@ -120,6 +124,10 @@ export const translations = {
     // navigation
     navList: 'Guest List',
     navSeating: 'Tables',
+
+    // backup
+    backup: 'Save backup',
+    backupTitle: 'Download a copy of the database (guests and tables)',
 
     // seating page
     seatingTitle: 'Seating Plan',

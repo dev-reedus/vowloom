@@ -12,6 +12,14 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState(loadLang)
   const [view, setView] = useState('list') // 'list' | 'seating'
+  // Admin-only tools (e.g. DB backup) are gated behind localStorage mode="admin".
+  const [isAdmin] = useState(() => {
+    try {
+      return localStorage.getItem('mode') === 'admin'
+    } catch {
+      return false
+    }
+  })
   const t = translations[lang]
 
   // Load guests + tables on mount.
@@ -149,7 +157,24 @@ export default function App() {
         />
       )}
 
-      <footer className="foot">Nozze di Marius e Giorgiana - 2026</footer>
+      <footer className="foot">
+        {isAdmin && (
+          <a className="backup-btn" href="/api/backup" title={t.backupTitle} download>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {t.backup}
+          </a>
+        )}
+        <span className="foot-credit">Nozze di Marius e Giorgiana - 2026</span>
+      </footer>
     </div>
   )
 }

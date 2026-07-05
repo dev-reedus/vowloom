@@ -4,6 +4,7 @@ import express from 'express'
 import {
   addGuest,
   addTable,
+  backupDatabase,
   deleteGuest,
   deleteTable,
   listGuests,
@@ -62,6 +63,16 @@ app.patch('/api/guests/:id', (req, res) => {
 app.delete('/api/guests/:id', (req, res) => {
   if (!deleteGuest(Number(req.params.id))) return res.status(404).json({ error: 'not found' })
   res.status(204).end()
+})
+
+// ---- database backup (protected by the same auth) ----
+// Streams a consistent .db snapshot the user can save off-device, so the data
+// survives an SD-card failure. Restore = drop the file back into the volume.
+app.get('/api/backup', (_req, res) => {
+  const stamp = new Date().toISOString().slice(0, 10)
+  res.setHeader('Content-Type', 'application/octet-stream')
+  res.setHeader('Content-Disposition', `attachment; filename="nozze-backup-${stamp}.db"`)
+  res.send(backupDatabase())
 })
 
 // ---- tables API ----

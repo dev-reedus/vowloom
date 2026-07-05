@@ -242,6 +242,18 @@ export function deleteGuest(id) {
   return db.prepare('DELETE FROM guests WHERE id = ?').run(id).changes > 0
 }
 
+// A consistent, standalone snapshot of the whole database (guests + tables),
+// for off-device backup. Checkpoint the WAL first so recent writes are folded
+// into the main file, then serialize the committed state into a Buffer.
+export function backupDatabase() {
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)')
+  } catch {
+    /* checkpoint is best-effort; serialize still returns committed data */
+  }
+  return db.serialize()
+}
+
 // ---- tables: data access ----
 
 const toTable = (row) => ({

@@ -83,7 +83,27 @@ docker run -d -p 8091:80 --name utils-nozze \
 ### API
 
 `GET /api/guests` · `POST /api/guests {name}` ·
-`PATCH /api/guests/:id {sent?, accepted?}` · `DELETE /api/guests/:id`
+`PATCH /api/guests/:id {sent?, reply_status?}` · `DELETE /api/guests/:id` ·
+`GET /api/backup` (downloads a `.db` snapshot)
+
+## Backup & restore
+
+The Docker volume keeps the database across container `stop`/`rm`/redeploys, but
+**not** across a dead SD card. Keep an off-device copy:
+
+- **Backup:** click **Save backup** in the app footer (or open `/api/backup`).
+  You get a timestamped `nozze-backup-YYYY-MM-DD.db` — the full database (guests
+  *and* tables). Save it somewhere off the Pi (phone, laptop, cloud drive).
+- **Restore:** drop that file back in as the database and restart:
+
+  ```bash
+  docker cp nozze-backup-2026-07-05.db utils-nozze:/app/data/nozze.db
+  # clear any stale write-ahead files so the restored DB is used as-is
+  docker exec utils-nozze sh -c 'rm -f /app/data/nozze.db-wal /app/data/nozze.db-shm'
+  docker restart utils-nozze
+  ```
+
+  (Seeding only runs on an empty DB, so restoring never gets overwritten.)
 
 ## Deploy (Raspberry Pi or any machine)
 

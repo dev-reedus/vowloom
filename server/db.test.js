@@ -29,7 +29,7 @@ process.env.SEED_FILE = path.join(TMP, 'no-such-seed.txt')
   raw.close()
 }
 
-const { addGuest, updateGuest, listGuests } = await import('./db.js')
+const { addGuest, updateGuest, listGuests, backupDatabase } = await import('./db.js')
 
 after(() => fs.rmSync(TMP, { recursive: true, force: true }))
 
@@ -71,4 +71,20 @@ test('a legacy { accepted } patch maps onto reply_status', () => {
   const g = addGuest('Legacy Patch')
   assert.equal(updateGuest(g.id, { accepted: true }).reply_status, 'accepted')
   assert.equal(updateGuest(g.id, { accepted: false }).reply_status, 'pending')
+})
+
+test('backupDatabase yields a valid, reopenable snapshot of the data', () => {
+  addGuest('Snapshot Marker')
+  const buf = backupDatabase()
+  assert.ok(Buffer.isBuffer(buf) && buf.length > 0)
+
+  const snapPath = path.join(TMP, 'snapshot.db')
+  fs.writeFileSync(snapPath, buf)
+  const snap = new Database(snapPath, { readonly: true })
+  const snapCount = snap.prepare('SELECT COUNT(*) AS c FROM guests').get().c
+  const hasMarker = snap.prepare("SELECT 1 FROM guests WHERE name = 'Snapshot Marker'").get()
+  snap.close()
+
+  assert.equal(snapCount, listGuests().length)
+  assert.ok(hasMarker)
 })
