@@ -1,8 +1,8 @@
 export const translations = {
   it: {
-    kicker: 'Con gioia, vi invitiamo',
-    title: 'Le Nostre Nozze',
-    subtitle: 'Lista Invitati & Conferme',
+    kicker: 'Le nostre nozze',
+    title: 'Marius & Giorgiana',
+    subtitle: 'Lista invitati e conferme',
     guests: 'Invitati',
     sentCount: 'Inviti Spediti',
     acceptedCount: 'Confermati',
@@ -78,8 +78,8 @@ export const translations = {
     printCards: 'Segnaposti',
   },
   en: {
-    kicker: 'Together with joy, we invite you',
-    title: 'Our Wedding',
+    kicker: 'Our wedding',
+    title: 'Marius & Giorgiana',
     subtitle: 'Guest List & RSVP Tracker',
     guests: 'Guests',
     sentCount: 'Invitations Sent',

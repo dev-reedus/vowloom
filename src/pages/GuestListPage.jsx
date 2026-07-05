@@ -212,7 +212,13 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                   <StatusSelect
                     t={t}
                     status={guest.reply_status}
-                    onChange={(reply_status) => updateGuest(guest.id, { reply_status })}
+                    onChange={(reply_status) => {
+                      // A real reply implies the invite went out — mark it sent if
+                      // it wasn't already. Clearing back to pending leaves sent alone.
+                      const fields = { reply_status }
+                      if (reply_status !== 'pending' && !guest.sent) fields.sent = true
+                      updateGuest(guest.id, fields)
+                    }}
                   />
                 </div>
               </div>
