@@ -1,25 +1,40 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { LANG_KEY, loadLang, translations } from './i18n'
+import { LANG_KEY, loadLang, nextLang, translations } from './i18n'
 import { api } from './api'
 import GuestListPage from './pages/GuestListPage'
+import GalleryAdminPage from './pages/GalleryAdminPage'
+import GalleryPage from './pages/GalleryPage'
+import GuestLinksAdminPage from './pages/GuestLinksAdminPage'
 import SeatingPage from './pages/SeatingPage'
 import './App.css'
 
+function galleryTokenFromPath() {
+  const match = window.location.pathname.match(/^\/g\/([^/]+)\/?$/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 export default function App() {
+  const galleryToken = galleryTokenFromPath()
+  if (galleryToken) return <GalleryPage token={galleryToken} />
+  return <AdminApp />
+}
+
+function AdminApp() {
   const [guests, setGuests] = useState([])
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState(loadLang)
-  const [view, setView] = useState('list') // 'list' | 'seating'
+  const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'guestLinksAdmin'
   // Admin-only tools (e.g. DB backup) are gated behind localStorage mode="admin".
-  const [isAdmin] = useState(() => {
+  const [adminKey] = useState(() => {
     try {
-      return localStorage.getItem('mode') === 'admin'
+      return localStorage.getItem('adminKey') || (localStorage.getItem('mode') === 'admin' ? 'admin' : '')
     } catch {
-      return false
+      return ''
     }
   })
+  const hasLocalAdminKey = !!adminKey
   const t = translations[lang]
 
   // Load guests + tables on mount.
@@ -117,7 +132,7 @@ export default function App() {
     <div className="page">
       <motion.button
         className="lang-toggle"
-        onClick={() => setLang((p) => (p === 'it' ? 'en' : 'it'))}
+        onClick={() => setLang((p) => nextLang(p))}
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.94 }}
         aria-label="Change language"
@@ -133,9 +148,21 @@ export default function App() {
         <button className={view === 'seating' ? 'on' : ''} onClick={() => setView('seating')}>
           {t.navSeating}
         </button>
+        <button className={view === 'galleryAdmin' ? 'on' : ''} onClick={() => setView('galleryAdmin')}>
+          {t.navGallery}
+        </button>
+        {hasLocalAdminKey && (
+          <button className={view === 'guestLinksAdmin' ? 'on' : ''} onClick={() => setView('guestLinksAdmin')}>
+            {t.navGuestLinks}
+          </button>
+        )}
       </nav>
 
-      {view === 'list' ? (
+      {view === 'galleryAdmin' ? (
+        <GalleryAdminPage adminKey={adminKey} t={t} />
+      ) : view === 'guestLinksAdmin' && hasLocalAdminKey ? (
+        <GuestLinksAdminPage adminKey={adminKey} t={t} />
+      ) : view === 'list' ? (
         <GuestListPage
           t={t}
           guests={guests}
@@ -158,7 +185,7 @@ export default function App() {
       )}
 
       <footer className="foot">
-        {isAdmin && (
+        {hasLocalAdminKey && (
           <a className="backup-btn" href="/api/backup" title={t.backupTitle} download>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path

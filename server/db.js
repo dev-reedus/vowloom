@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
 
@@ -34,6 +35,59 @@ db.exec(`
     w        REAL    NOT NULL DEFAULT 0.14,       -- normalized (reserved for later)
     h        REAL    NOT NULL DEFAULT 0.14,
     rotation REAL    NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS gallery_albums (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT    NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS gallery_photos (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    album_id     INTEGER NOT NULL DEFAULT 1,
+    title        TEXT    NOT NULL,
+    original_key TEXT    NOT NULL UNIQUE,
+    thumb_key    TEXT,
+    display_key  TEXT,
+    width        INTEGER,
+    height       INTEGER,
+    bytes        INTEGER,
+    content_type TEXT,
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (album_id) REFERENCES gallery_albums(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS access_tokens (
+    token              TEXT    PRIMARY KEY,
+    label              TEXT    NOT NULL,
+    scope              TEXT    NOT NULL DEFAULT 'gallery',
+    created_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+    expires_at         TEXT,
+    revoked            INTEGER NOT NULL DEFAULT 0,
+    note               TEXT,
+    open_count         INTEGER NOT NULL DEFAULT 0,
+    download_url_count INTEGER NOT NULL DEFAULT 0,
+    last_seen_at       TEXT,
+    last_download_at   TEXT,
+    deleted_at         TEXT,
+    default_lang       TEXT    NOT NULL DEFAULT 'it'
+  );
+
+  CREATE TABLE IF NOT EXISTS gallery_download_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    token      TEXT    NOT NULL,
+    photo_id   INTEGER NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    ip_hash    TEXT,
+    user_agent TEXT,
+    FOREIGN KEY (token) REFERENCES access_tokens(token),
+    FOREIGN KEY (photo_id) REFERENCES gallery_photos(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS gallery_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   );
 `)
 
@@ -75,8 +129,28 @@ function migrate() {
     // everyone else stays 'pending'.
     db.exec("UPDATE guests SET reply_status = 'accepted' WHERE accepted = 1")
   }
+  if (!columnExists('access_tokens', 'deleted_at')) {
+    db.exec('ALTER TABLE access_tokens ADD COLUMN deleted_at TEXT')
+  }
+  if (!columnExists('access_tokens', 'default_lang')) {
+    db.exec("ALTER TABLE access_tokens ADD COLUMN default_lang TEXT NOT NULL DEFAULT 'it'")
+  }
 }
 migrate()
+
+function ensureDefaultAlbum() {
+  const row = db.prepare('SELECT id FROM gallery_albums WHERE id = 1').get()
+  if (!row) db.prepare('INSERT INTO gallery_albums (id, title) VALUES (1, ?)').run('Wedding')
+}
+ensureDefaultAlbum()
+
+const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19)
+
+function normalizeSqlDate(value) {
+  const clean = String(value || '').trim()
+  if (!clean) return null
+  return clean.replace('T', ' ').slice(0, 19)
+}
 
 // Header words to skip when reading lista.txt.
 const HEADER_WORDS = new Set(['nome', 'invito', 'conferma', 'name', 'sent', 'accepted'])
@@ -310,4 +384,196 @@ export function deleteTable(id) {
   // free any guests seated at this table first
   db.prepare('UPDATE guests SET table_id = NULL WHERE table_id = ?').run(id)
   return db.prepare('DELETE FROM tables WHERE id = ?').run(id).changes > 0
+}
+
+// ---- gallery ----
+
+const toAccessToken = (row) => ({
+  token: row.token,
+  token_preview: `${row.token.slice(0, 6)}...${row.token.slice(-4)}`,
+  label: row.label,
+  scope: row.scope,
+  created_at: row.created_at,
+  expires_at: row.expires_at,
+  revoked: !!row.revoked,
+  note: row.note || '',
+  open_count: row.open_count || 0,
+  download_url_count: row.download_url_count || 0,
+  last_seen_at: row.last_seen_at || null,
+  last_download_at: row.last_download_at || null,
+  deleted_at: row.deleted_at || null,
+  default_lang: ['it', 'en', 'ro'].includes(row.default_lang) ? row.default_lang : 'it',
+})
+
+const toPhoto = (row) => ({
+  id: row.id,
+  album_id: row.album_id,
+  title: row.title,
+  original_key: row.original_key,
+  thumb_key: row.thumb_key || null,
+  display_key: row.display_key || null,
+  width: row.width || null,
+  height: row.height || null,
+  bytes: row.bytes || null,
+  content_type: row.content_type || null,
+  created_at: row.created_at,
+})
+
+export function listAccessTokens({ includeFullToken = false, includeDeleted = false } = {}) {
+  const deletedFilter = includeDeleted ? '' : 'AND deleted_at IS NULL'
+  return db
+    .prepare(
+      `SELECT * FROM access_tokens
+       WHERE scope = 'gallery' ${deletedFilter}
+       ORDER BY revoked ASC, created_at DESC`,
+    )
+    .all()
+    .map((row) => {
+      const token = toAccessToken(row)
+      return includeFullToken ? token : { ...token, token: undefined }
+    })
+}
+
+export function createAccessToken({ label, expires_at = null, note = '', default_lang = 'it' }) {
+  const cleanLabel = String(label || '').trim()
+  if (!cleanLabel) throw new Error('label is required')
+  const lang = ['it', 'en', 'ro'].includes(default_lang) ? default_lang : 'it'
+  const token = crypto.randomBytes(24).toString('base64url')
+  db.prepare(
+    `INSERT INTO access_tokens (token, label, expires_at, note, default_lang)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(token, cleanLabel, normalizeSqlDate(expires_at), String(note || '').trim() || null, lang)
+  return toAccessToken(db.prepare('SELECT * FROM access_tokens WHERE token = ?').get(token))
+}
+
+export function revokeAccessToken(token) {
+  const info = db
+    .prepare("UPDATE access_tokens SET revoked = 1 WHERE token = ? AND scope = 'gallery' AND deleted_at IS NULL")
+    .run(token)
+  if (!info.changes) return null
+  return toAccessToken(db.prepare('SELECT * FROM access_tokens WHERE token = ?').get(token))
+}
+
+export function softDeleteAccessToken(token) {
+  const info = db
+    .prepare(
+      `UPDATE access_tokens
+       SET revoked = 1, deleted_at = COALESCE(deleted_at, ?)
+       WHERE token = ? AND scope = 'gallery'`,
+    )
+    .run(nowSql(), token)
+  if (!info.changes) return null
+  return toAccessToken(db.prepare('SELECT * FROM access_tokens WHERE token = ?').get(token))
+}
+
+export function validateGalleryToken(token, { markSeen = false } = {}) {
+  if (!token) return null
+  const row = db
+    .prepare(
+      `SELECT * FROM access_tokens
+       WHERE token = ? AND scope = 'gallery' AND revoked = 0
+       AND deleted_at IS NULL
+       AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+    )
+    .get(token)
+  if (!row) return null
+  if (markSeen) {
+    db.prepare(
+      `UPDATE access_tokens
+       SET open_count = open_count + 1, last_seen_at = ?
+       WHERE token = ?`,
+    ).run(nowSql(), token)
+    return toAccessToken(db.prepare('SELECT * FROM access_tokens WHERE token = ?').get(token))
+  }
+  return toAccessToken(row)
+}
+
+export function listGalleryPhotos() {
+  return db
+    .prepare('SELECT * FROM gallery_photos ORDER BY created_at DESC, id DESC')
+    .all()
+    .map(toPhoto)
+}
+
+export function getGalleryPhoto(id) {
+  const row = db.prepare('SELECT * FROM gallery_photos WHERE id = ?').get(id)
+  return row ? toPhoto(row) : null
+}
+
+export function upsertGalleryPhoto(fields = {}) {
+  const originalKey = String(fields.original_key || '').trim()
+  if (!originalKey) throw new Error('original_key is required')
+  const title = String(fields.title || path.basename(originalKey)).trim()
+  const existing = db.prepare('SELECT id FROM gallery_photos WHERE original_key = ?').get(originalKey)
+  const values = {
+    album_id: Number(fields.album_id) || 1,
+    title,
+    original_key: originalKey,
+    thumb_key: String(fields.thumb_key || '').trim() || null,
+    display_key: String(fields.display_key || '').trim() || null,
+    width: fields.width == null ? null : Number(fields.width) || null,
+    height: fields.height == null ? null : Number(fields.height) || null,
+    bytes: fields.bytes == null ? null : Number(fields.bytes) || null,
+    content_type: String(fields.content_type || '').trim() || null,
+  }
+  if (existing) {
+    db.prepare(
+      `UPDATE gallery_photos
+       SET album_id = @album_id, title = @title, thumb_key = @thumb_key,
+           display_key = @display_key, width = @width, height = @height,
+           bytes = @bytes, content_type = @content_type
+       WHERE original_key = @original_key`,
+    ).run(values)
+    return getGalleryPhoto(existing.id)
+  }
+  const info = db
+    .prepare(
+      `INSERT INTO gallery_photos
+       (album_id, title, original_key, thumb_key, display_key, width, height, bytes, content_type)
+       VALUES (@album_id, @title, @original_key, @thumb_key, @display_key, @width, @height, @bytes, @content_type)`,
+    )
+    .run(values)
+  return getGalleryPhoto(info.lastInsertRowid)
+}
+
+export function updateGalleryPhotoDerivatives(id, fields = {}) {
+  const current = getGalleryPhoto(id)
+  if (!current) return null
+  db.prepare(
+    `UPDATE gallery_photos
+     SET thumb_key = COALESCE(@thumb_key, thumb_key),
+         display_key = COALESCE(@display_key, display_key),
+         width = COALESCE(@width, width),
+         height = COALESCE(@height, height)
+     WHERE id = @id`,
+  ).run({
+    id,
+    thumb_key: String(fields.thumb_key || '').trim() || null,
+    display_key: String(fields.display_key || '').trim() || null,
+    width: fields.width == null ? null : Number(fields.width) || null,
+    height: fields.height == null ? null : Number(fields.height) || null,
+  })
+  return getGalleryPhoto(id)
+}
+
+export function recordOriginalDownloadUrl({ token, photo_id, ip_hash = null, user_agent = '' }) {
+  db.prepare(
+    `INSERT INTO gallery_download_events (token, photo_id, ip_hash, user_agent)
+     VALUES (?, ?, ?, ?)`,
+  ).run(token, photo_id, ip_hash, String(user_agent || '').slice(0, 300))
+  db.prepare(
+    `UPDATE access_tokens
+     SET download_url_count = download_url_count + 1, last_download_at = ?
+     WHERE token = ?`,
+  ).run(nowSql(), token)
+}
+
+export function countRecentOriginalDownloadUrls(token, sinceIso) {
+  return db
+    .prepare(
+      `SELECT COUNT(*) AS count
+       FROM gallery_download_events
+       WHERE token = ? AND created_at >= ?`,
+    )
+    .get(token, sinceIso).count
 }

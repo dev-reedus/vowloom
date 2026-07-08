@@ -29,7 +29,20 @@ process.env.SEED_FILE = path.join(TMP, 'no-such-seed.txt')
   raw.close()
 }
 
-const { addGuest, updateGuest, listGuests, backupDatabase } = await import('./db.js')
+const {
+  addGuest,
+  backupDatabase,
+  createAccessToken,
+  getGalleryPhoto,
+  listAccessTokens,
+  listGuests,
+  recordOriginalDownloadUrl,
+  revokeAccessToken,
+  softDeleteAccessToken,
+  updateGuest,
+  upsertGalleryPhoto,
+  validateGalleryToken,
+} = await import('./db.js')
 
 after(() => fs.rmSync(TMP, { recursive: true, force: true }))
 
@@ -87,4 +100,45 @@ test('backupDatabase yields a valid, reopenable snapshot of the data', () => {
 
   assert.equal(snapCount, listGuests().length)
   assert.ok(hasMarker)
+})
+
+test('gallery tokens validate until they are revoked', () => {
+  const token = createAccessToken({ label: 'Test Couple', default_lang: 'ro' })
+  assert.equal(token.label, 'Test Couple')
+  assert.equal(token.default_lang, 'ro')
+  assert.ok(token.token.length > 24)
+
+  const valid = validateGalleryToken(token.token, { markSeen: true })
+  assert.equal(valid.label, 'Test Couple')
+  assert.equal(valid.default_lang, 'ro')
+  assert.equal(valid.open_count, 1)
+
+  revokeAccessToken(token.token)
+  assert.equal(validateGalleryToken(token.token), null)
+})
+
+test('soft-deleted gallery tokens are hidden and invalid', () => {
+  const token = createAccessToken({ label: 'Delete Tester' })
+  assert.ok(listAccessTokens({ includeFullToken: true }).some((item) => item.token === token.token))
+
+  const deleted = softDeleteAccessToken(token.token)
+  assert.equal(deleted.revoked, true)
+  assert.ok(deleted.deleted_at)
+  assert.equal(validateGalleryToken(token.token), null)
+  assert.equal(listAccessTokens({ includeFullToken: true }).some((item) => item.token === token.token), false)
+  assert.ok(listAccessTokens({ includeFullToken: true, includeDeleted: true }).some((item) => item.token === token.token))
+})
+
+test('gallery photo metadata can be saved and download URL events are counted', () => {
+  const token = createAccessToken({ label: 'Download Tester' })
+  const photo = upsertGalleryPhoto({
+    title: 'First Dance',
+    original_key: 'originals/first-dance.jpg',
+    thumb_key: 'thumbs/first-dance.jpg',
+    display_key: 'display/first-dance.jpg',
+  })
+
+  assert.equal(getGalleryPhoto(photo.id).title, 'First Dance')
+  recordOriginalDownloadUrl({ token: token.token, photo_id: photo.id, ip_hash: 'abc', user_agent: 'test' })
+  assert.equal(validateGalleryToken(token.token).download_url_count, 1)
 })

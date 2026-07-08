@@ -11,6 +11,8 @@
 #   HOST_PORT      port to expose         (default: 8091)
 #   AUTH_USER      Basic Auth username    (default: sposi)
 #   AUTH_PASSWORD  Basic Auth password    (REQUIRED for a public address)
+#   ADMIN_KEY      extra key for sensitive gallery admin tools
+#   R2_*           Cloudflare R2 gallery storage settings
 #   DATA_VOLUME    Docker volume for DB   (default: <APP_NAME>-data)
 #
 # Examples:
@@ -42,6 +44,16 @@ APP_NAME="${APP_NAME:-utils-nozze}"
 HOST_PORT="${HOST_PORT:-8091}"
 AUTH_USER="${AUTH_USER:-sposi}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-}"
+ADMIN_KEY="${ADMIN_KEY:-}"
+R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-}"
+R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:-}"
+R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:-}"
+R2_BUCKET="${R2_BUCKET:-}"
+R2_PUBLIC_BASE_URL="${R2_PUBLIC_BASE_URL:-}"
+GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS="${GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS:-300}"
+GALLERY_DISPLAY_URL_EXPIRES_SECONDS="${GALLERY_DISPLAY_URL_EXPIRES_SECONDS:-3600}"
+GALLERY_TOKEN_DAILY_DOWNLOAD_LIMIT="${GALLERY_TOKEN_DAILY_DOWNLOAD_LIMIT:-200}"
+GALLERY_DISPLAY_IMAGE_SIZE="${GALLERY_DISPLAY_IMAGE_SIZE:-2048}"
 DATA_VOLUME="${DATA_VOLUME:-${APP_NAME}-data}"
 
 # 1. Docker must be installed and running.
@@ -68,6 +80,16 @@ if [ -z "${AUTH_PASSWORD}" ]; then
   esac
 fi
 
+if [ -z "${ADMIN_KEY}" ]; then
+  echo "!! ADMIN_KEY is not set — gallery admin tools will fall back to the dev value 'admin'." >&2
+  echo "   Set a long random ADMIN_KEY in .env before production deploy." >&2
+  read -r -p "   Continue with the dev fallback anyway? [y/N] " reply
+  case "${reply}" in
+    [yY]*) ;;
+    *) echo "   Aborted."; exit 1 ;;
+  esac
+fi
+
 echo "==> Building image '${APP_NAME}:latest' (this is native to this machine)…"
 docker build -t "${APP_NAME}:latest" .
 
@@ -80,6 +102,16 @@ docker run -d \
   -v "${DATA_VOLUME}:/app/data" \
   -e "AUTH_USER=${AUTH_USER}" \
   -e "AUTH_PASSWORD=${AUTH_PASSWORD}" \
+  -e "ADMIN_KEY=${ADMIN_KEY}" \
+  -e "R2_ACCOUNT_ID=${R2_ACCOUNT_ID}" \
+  -e "R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}" \
+  -e "R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}" \
+  -e "R2_BUCKET=${R2_BUCKET}" \
+  -e "R2_PUBLIC_BASE_URL=${R2_PUBLIC_BASE_URL}" \
+  -e "GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS=${GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS}" \
+  -e "GALLERY_DISPLAY_URL_EXPIRES_SECONDS=${GALLERY_DISPLAY_URL_EXPIRES_SECONDS}" \
+  -e "GALLERY_TOKEN_DAILY_DOWNLOAD_LIMIT=${GALLERY_TOKEN_DAILY_DOWNLOAD_LIMIT}" \
+  -e "GALLERY_DISPLAY_IMAGE_SIZE=${GALLERY_DISPLAY_IMAGE_SIZE}" \
   "${APP_NAME}:latest"
 
 docker image prune -f >/dev/null 2>&1 || true
