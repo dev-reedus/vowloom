@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
+import { AdminDateTimeInput, AdminSelect, AdminTextInput } from '../components/AdminControls'
+
+function localDateTimeInDays(days) {
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().slice(0, 16)
+}
 
 export default function GuestLinksAdminPage({ adminKey, t }) {
   const [tokens, setTokens] = useState([])
@@ -9,8 +16,15 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
   const [defaultLang, setDefaultLang] = useState('it')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
+  const canManageLinks = !!adminKey
 
   const origin = useMemo(() => window.location.origin, [])
+  const expirySummary = useMemo(() => {
+    if (!expiresAt) return t.guestLinksNoExpiry
+    const date = new Date(expiresAt)
+    if (Number.isNaN(date.getTime())) return t.guestLinksInvalidExpiry
+    return t.guestLinksExpirySummary(date.toLocaleString())
+  }, [expiresAt, t])
 
   async function reload() {
     setTokens(await api.listGalleryTokens(adminKey))
@@ -92,22 +106,42 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
         {status && <p className="admin-status">{status}</p>}
       </header>
 
-      <form className="admin-form" onSubmit={createToken}>
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t.guestLinksLabelPlaceholder} />
-        <input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.guestLinksNotePlaceholder} />
-        <select
-          value={defaultLang}
-          onChange={(e) => setDefaultLang(e.target.value)}
-          aria-label={t.guestLinksDefaultLanguage}
-          title={t.guestLinksDefaultLanguage}
-        >
-          <option value="it">Italiano</option>
-          <option value="en">English</option>
-          <option value="ro">Română</option>
-        </select>
-        <button type="submit">{t.guestLinksCreate}</button>
-      </form>
+      {canManageLinks ? (
+        <>
+          <form className="admin-form" onSubmit={createToken}>
+            <AdminTextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t.guestLinksLabelPlaceholder} />
+            <AdminTextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.guestLinksNotePlaceholder} />
+            <AdminSelect
+              value={defaultLang}
+              onChange={(e) => setDefaultLang(e.target.value)}
+              aria-label={t.guestLinksDefaultLanguage}
+              title={t.guestLinksDefaultLanguage}
+            >
+              <option value="it">Italiano</option>
+              <option value="en">English</option>
+              <option value="ro">Română</option>
+            </AdminSelect>
+            <button type="submit">{t.guestLinksCreate}</button>
+          </form>
+
+          <div className="expiry-panel">
+            <AdminDateTimeInput
+              label={t.guestLinksExpiryLabel}
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+            />
+            <div className="expiry-presets">
+              <button type="button" onClick={() => setExpiresAt('')}>{t.guestLinksExpiryNever}</button>
+              <button type="button" onClick={() => setExpiresAt(localDateTimeInDays(30))}>{t.guestLinksExpiry30}</button>
+              <button type="button" onClick={() => setExpiresAt(localDateTimeInDays(90))}>{t.guestLinksExpiry90}</button>
+              <button type="button" onClick={() => setExpiresAt(localDateTimeInDays(365))}>{t.guestLinksExpiry365}</button>
+            </div>
+            <p>{expirySummary}</p>
+          </div>
+        </>
+      ) : (
+        <p className="admin-readonly-note">{t.guestLinksReadonly}</p>
+      )}
 
       <div className="admin-table" role="table" aria-label={t.guestLinksTableLabel}>
         {tokens.length === 0 ? (
@@ -136,12 +170,16 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
                 <button type="button" onClick={() => copyLink(token.token)} disabled={token.revoked}>
                   {t.guestLinksCopy}
                 </button>
-                <button type="button" onClick={() => revokeToken(token.token)} disabled={token.revoked}>
-                  {t.guestLinksRevoke}
-                </button>
-                <button type="button" onClick={() => deleteToken(token.token)}>
-                  {t.guestLinksDelete}
-                </button>
+                {canManageLinks && (
+                  <>
+                    <button type="button" onClick={() => revokeToken(token.token)} disabled={token.revoked}>
+                      {t.guestLinksRevoke}
+                    </button>
+                    <button type="button" onClick={() => deleteToken(token.token)}>
+                      {t.guestLinksDelete}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))

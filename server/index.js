@@ -10,6 +10,7 @@ import {
   createAccessToken,
   deleteGuest,
   deleteTable,
+  getGalleryBudgetStatus,
   getGalleryPhoto,
   listGuests,
   listAccessTokens,
@@ -19,6 +20,7 @@ import {
   revokeAccessToken,
   seedIfEmpty,
   seedTablesIfEmpty,
+  setGalleryMonthlyBudget,
   softDeleteAccessToken,
   updateGalleryPhotoDerivatives,
   upsertGalleryPhoto,
@@ -27,7 +29,7 @@ import {
   validateGalleryToken,
 } from './db.js'
 import { generateGalleryDerivatives } from './galleryImages.js'
-import { isR2Configured, presignR2Url, publicR2Url } from './r2.js'
+import { isR2Configured, listR2Objects, presignR2Url, publicR2Url } from './r2.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
@@ -39,6 +41,7 @@ const ADMIN_KEY = process.env.ADMIN_KEY || 'admin'
 const DOWNLOAD_URL_EXPIRES_SECONDS = Number(process.env.GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS || 300)
 const DISPLAY_URL_EXPIRES_SECONDS = Number(process.env.GALLERY_DISPLAY_URL_EXPIRES_SECONDS || 3600)
 const DAILY_DOWNLOAD_URL_LIMIT = Number(process.env.GALLERY_TOKEN_DAILY_DOWNLOAD_LIMIT || 200)
+const DEFAULT_MONTHLY_BUDGET_USD = Number(process.env.GALLERY_MONTHLY_BUDGET_USD || 10)
 
 const app = express()
 app.use(express.json())
@@ -87,6 +90,28 @@ function ipHash(req) {
 
 function toSqlDate(date) {
   return date.toISOString().replace('T', ' ').slice(0, 19)
+}
+
+function monthStartSql(date = new Date()) {
+  return toSqlDate(new Date(date.getFullYear(), date.getMonth(), 1))
+}
+
+function galleryBudgetStatus() {
+  return getGalleryBudgetStatus({
+    monthStart: monthStartSql(),
+    defaultBudgetUsd: DEFAULT_MONTHLY_BUDGET_USD,
+  })
+}
+
+function blockIfGalleryBudgetExceeded(res) {
+  const budget = galleryBudgetStatus()
+  if (!budget.budget_exceeded) return false
+  res.status(429).json({ error: 'gallery monthly budget reached', budget })
+  return true
+}
+
+function titleFromR2Key(key) {
+  return path.basename(String(key || 'photo'), path.extname(String(key || ''))).replace(/[-_]+/g, ' ').trim() || 'Photo'
 }
 
 // ---- guests API ----
@@ -174,6 +199,7 @@ app.post('/api/gallery/photos/:id/download-url', (req, res) => {
   const access = validateGalleryToken(token)
   if (!access) return res.status(401).json({ error: 'invalid or expired gallery link' })
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
+  if (blockIfGalleryBudgetExceeded(res)) return
 
   const since = toSqlDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
   if (DAILY_DOWNLOAD_URL_LIMIT > 0 && countRecentOriginalDownloadUrls(token, since) >= DAILY_DOWNLOAD_URL_LIMIT) {
@@ -237,6 +263,18 @@ app.delete('/api/admin/gallery/tokens/:token', requireAdminKey, (req, res) => {
 })
 
 // ---- gallery photo admin API (Basic Auth) ----
+app.get('/api/admin/gallery/status', (_req, res) => {
+  res.json({
+    r2_configured: isR2Configured(),
+    budget: galleryBudgetStatus(),
+  })
+})
+
+app.post('/api/admin/gallery/settings/budget', requireAdminKey, (req, res) => {
+  setGalleryMonthlyBudget(req.body?.monthly_budget_usd)
+  res.json(galleryBudgetStatus())
+})
+
 app.get('/api/admin/gallery/photos', (_req, res) => {
   res.json(listGalleryPhotos())
 })
@@ -251,6 +289,7 @@ app.post('/api/admin/gallery/photos', (req, res) => {
 
 app.post('/api/admin/gallery/photos/:id/generate-derivatives', async (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
+  if (blockIfGalleryBudgetExceeded(res)) return
   const photo = getGalleryPhoto(Number(req.params.id))
   if (!photo) return res.status(404).json({ error: 'photo not found' })
 
@@ -265,6 +304,7 @@ app.post('/api/admin/gallery/photos/:id/generate-derivatives', async (req, res) 
 
 app.post('/api/admin/gallery/upload-url', (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
+  if (blockIfGalleryBudgetExceeded(res)) return
   const filename = String(req.body?.filename || '').trim()
   if (!filename) return res.status(400).json({ error: 'filename is required' })
 
@@ -283,6 +323,44 @@ app.post('/api/admin/gallery/upload-url', (req, res) => {
     upload_url: presignR2Url({ method: 'PUT', key, expiresIn: 600, disposition: null }),
     expires_in: 600,
   })
+})
+
+app.post('/api/admin/gallery/import-r2', async (req, res) => {
+  if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
+  if (blockIfGalleryBudgetExceeded(res)) return
+
+  const prefix = String(req.body?.prefix || 'originals/').trim() || 'originals/'
+  try {
+    const existing = new Set(listGalleryPhotos().map((photo) => photo.original_key))
+    const objects = (await listR2Objects({ prefix })).filter((object) => object.key && !object.key.endsWith('/'))
+    const imported = []
+    let skipped = 0
+
+    for (const object of objects) {
+      if (existing.has(object.key)) {
+        skipped += 1
+        continue
+      }
+      const photo = upsertGalleryPhoto({
+        title: titleFromR2Key(object.key),
+        original_key: object.key,
+        bytes: object.size || null,
+      })
+      existing.add(object.key)
+      imported.push(photo)
+    }
+
+    res.status(201).json({
+      imported,
+      imported_count: imported.length,
+      skipped_count: skipped,
+      scanned_count: objects.length,
+      prefix,
+    })
+  } catch (err) {
+    console.error('[gallery] R2 import failed', err)
+    res.status(500).json({ error: err.message || 'could not import R2 originals' })
+  }
 })
 
 // ---- static frontend + SPA fallback ----

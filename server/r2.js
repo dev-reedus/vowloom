@@ -100,6 +100,95 @@ export function presignR2Url({
   return `https://${host}${canonicalUri}?${canonicalQuery(params)}`
 }
 
+function decodeXml(value) {
+  return String(value || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
+function signedBucketUrl({ params, expiresIn = 300 } = {}) {
+  if (!isR2Configured()) throw new Error('R2 is not configured')
+
+  const cfg = env()
+  const date = new Date()
+  const fullDate = amzDate(date)
+  const shortDate = fullDate.slice(0, 8)
+  const host = `${cfg.accountId}.r2.cloudflarestorage.com`
+  const canonicalUri = `/${encodePathPart(cfg.bucket)}`
+  const credentialScope = `${shortDate}/${REGION}/${SERVICE}/aws4_request`
+  const signedHeaders = 'host'
+  const query = new URLSearchParams(params || {})
+
+  query.set('X-Amz-Algorithm', ALGORITHM)
+  query.set('X-Amz-Credential', `${cfg.accessKeyId}/${credentialScope}`)
+  query.set('X-Amz-Date', fullDate)
+  query.set('X-Amz-Expires', String(Math.max(1, Math.min(Number(expiresIn) || 300, 604800))))
+  query.set('X-Amz-SignedHeaders', signedHeaders)
+
+  const canonicalRequest = [
+    'GET',
+    canonicalUri,
+    canonicalQuery(query),
+    `host:${host}\n`,
+    signedHeaders,
+    'UNSIGNED-PAYLOAD',
+  ].join('\n')
+
+  const stringToSign = [ALGORITHM, fullDate, credentialScope, sha256(canonicalRequest)].join('\n')
+  const signature = hmac(signingKey(cfg.secretAccessKey, shortDate), stringToSign, 'hex')
+  query.set('X-Amz-Signature', signature)
+
+  return `https://${host}${canonicalUri}?${canonicalQuery(query)}`
+}
+
+function parseListObjectsXml(xml) {
+  const objects = []
+  for (const match of String(xml).matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+    const block = match[1]
+    const key = decodeXml(block.match(/<Key>([\s\S]*?)<\/Key>/)?.[1])
+    if (!key) continue
+    objects.push({
+      key,
+      size: Number(block.match(/<Size>([\s\S]*?)<\/Size>/)?.[1]) || 0,
+      last_modified: decodeXml(block.match(/<LastModified>([\s\S]*?)<\/LastModified>/)?.[1]) || null,
+    })
+  }
+  return {
+    objects,
+    is_truncated: /<IsTruncated>true<\/IsTruncated>/.test(xml),
+    next_continuation_token: decodeXml(
+      String(xml).match(/<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/)?.[1],
+    ) || null,
+  }
+}
+
+export const __test = { parseListObjectsXml }
+
+export async function listR2Objects({ prefix = '', maxKeys = 1000 } = {}) {
+  const objects = []
+  let continuationToken = null
+
+  do {
+    const params = {
+      'list-type': '2',
+      'max-keys': String(Math.max(1, Math.min(Number(maxKeys) || 1000, 1000))),
+    }
+    if (prefix) params.prefix = prefix
+    if (continuationToken) params['continuation-token'] = continuationToken
+
+    const response = await fetch(signedBucketUrl({ params, expiresIn: 300 }))
+    if (!response.ok) throw new Error(`R2 LIST failed with ${response.status}`)
+    const page = parseListObjectsXml(await response.text())
+    objects.push(...page.objects)
+    continuationToken = page.is_truncated ? page.next_continuation_token : null
+  } while (continuationToken)
+
+  return objects
+}
+
 export function publicR2Url(key) {
   const { publicBaseUrl } = env()
   if (!publicBaseUrl || !key) return null

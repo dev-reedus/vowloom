@@ -33,11 +33,13 @@ const {
   addGuest,
   backupDatabase,
   createAccessToken,
+  getGalleryBudgetStatus,
   getGalleryPhoto,
   listAccessTokens,
   listGuests,
   recordOriginalDownloadUrl,
   revokeAccessToken,
+  setGalleryMonthlyBudget,
   softDeleteAccessToken,
   updateGuest,
   upsertGalleryPhoto,
@@ -141,4 +143,28 @@ test('gallery photo metadata can be saved and download URL events are counted', 
   assert.equal(getGalleryPhoto(photo.id).title, 'First Dance')
   recordOriginalDownloadUrl({ token: token.token, photo_id: photo.id, ip_hash: 'abc', user_agent: 'test' })
   assert.equal(validateGalleryToken(token.token).download_url_count, 1)
+})
+
+test('gallery budget status estimates storage and persists the monthly budget', () => {
+  upsertGalleryPhoto({
+    title: 'Budget Marker',
+    original_key: 'originals/budget-marker.jpg',
+    bytes: 2 * 1024 * 1024 * 1024,
+  })
+
+  const defaultStatus = getGalleryBudgetStatus({
+    monthStart: '0000-01-01 00:00:00',
+    defaultBudgetUsd: 10,
+  })
+  assert.equal(defaultStatus.monthly_budget_usd, 10)
+  assert.ok(defaultStatus.original_storage_bytes >= 2 * 1024 * 1024 * 1024)
+  assert.ok(defaultStatus.estimated_monthly_usd > 0)
+
+  setGalleryMonthlyBudget(0.01)
+  const tightStatus = getGalleryBudgetStatus({
+    monthStart: '0000-01-01 00:00:00',
+    defaultBudgetUsd: 10,
+  })
+  assert.equal(tightStatus.monthly_budget_usd, 0.01)
+  assert.equal(tightStatus.budget_exceeded, true)
 })

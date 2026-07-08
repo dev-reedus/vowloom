@@ -151,16 +151,14 @@ function AdminApp() {
         <button className={view === 'galleryAdmin' ? 'on' : ''} onClick={() => setView('galleryAdmin')}>
           {t.navGallery}
         </button>
-        {hasLocalAdminKey && (
-          <button className={view === 'guestLinksAdmin' ? 'on' : ''} onClick={() => setView('guestLinksAdmin')}>
-            {t.navGuestLinks}
-          </button>
-        )}
+        <button className={view === 'guestLinksAdmin' ? 'on' : ''} onClick={() => setView('guestLinksAdmin')}>
+          {t.navGuestLinks}
+        </button>
       </nav>
 
       {view === 'galleryAdmin' ? (
         <GalleryAdminPage adminKey={adminKey} t={t} />
-      ) : view === 'guestLinksAdmin' && hasLocalAdminKey ? (
+      ) : view === 'guestLinksAdmin' ? (
         <GuestLinksAdminPage adminKey={adminKey} t={t} />
       ) : view === 'list' ? (
         <GuestListPage

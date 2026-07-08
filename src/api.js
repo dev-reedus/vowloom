@@ -67,6 +67,13 @@ export const api = {
       headers: adminHeaders(adminKey),
     }),
   listGalleryPhotos: (adminKey) => req('/api/admin/gallery/photos', { headers: adminHeaders(adminKey) }),
+  galleryAdminStatus: (adminKey) => req('/api/admin/gallery/status', { headers: adminHeaders(adminKey) }),
+  updateGalleryBudget: (adminKey, monthlyBudgetUsd) =>
+    req('/api/admin/gallery/settings/budget', {
+      method: 'POST',
+      headers: adminHeaders(adminKey),
+      body: JSON.stringify({ monthly_budget_usd: monthlyBudgetUsd }),
+    }),
   saveGalleryPhoto: (adminKey, fields) =>
     req('/api/admin/gallery/photos', {
       method: 'POST',
@@ -80,6 +87,12 @@ export const api = {
     }),
   createGalleryUploadUrl: (adminKey, fields) =>
     req('/api/admin/gallery/upload-url', {
+      method: 'POST',
+      headers: adminHeaders(adminKey),
+      body: JSON.stringify(fields || {}),
+    }),
+  importGalleryR2: (adminKey, fields) =>
+    req('/api/admin/gallery/import-r2', {
       method: 'POST',
       headers: adminHeaders(adminKey),
       body: JSON.stringify(fields || {}),

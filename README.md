@@ -127,11 +127,17 @@ HOST_PORT=80 AUTH_USER=george AUTH_PASSWORD='our-secret' ./deploy.sh
 ```
 
 Configurable vars (in `.env` or inline): `APP_NAME`, `HOST_PORT`, `AUTH_USER`,
-`AUTH_PASSWORD`, `DATA_VOLUME` (defaults: `utils-nozze`, `8091`, `sposi`,
-_empty_, `<APP_NAME>-data`). `.env` is git-ignored so your password stays out of
-git. The script warns and asks for confirmation if you deploy without a
-password, and prints the LAN URL when it's up. The DB volume survives
-`stop`/`rm`/redeploys, so `lista.txt` seeds only the very first time.
+`AUTH_PASSWORD`, `ADMIN_KEY`, `DATA_VOLUME`, `R2_*`, and `GALLERY_*` settings.
+Defaults include `utils-nozze`, `8091`, `sposi`, an empty password, and
+`<APP_NAME>-data`. `.env` is git-ignored so your password stays out of git. The
+script warns and asks for confirmation if you deploy without a password, and
+prints the LAN URL when it's up. The DB volume survives `stop`/`rm`/redeploys,
+so `lista.txt` seeds only the very first time.
+
+`ADMIN_KEY` is required for sensitive gallery controls such as creating,
+revoking, or deleting guest links and changing monthly budget configuration. Set
+the same value in browser `localStorage` as `adminKey` when you need those
+controls.
 
 > First run on a Pi has no Docker? Install it with
 > `curl -sSL https://get.docker.com | sh`, then

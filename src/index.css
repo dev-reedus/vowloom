@@ -44,6 +44,7 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-input {
+input,
+select {
   font-family: inherit;
 }
