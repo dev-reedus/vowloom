@@ -8,6 +8,7 @@ import {
   backupDatabase,
   countRecentOriginalDownloadUrls,
   createAccessToken,
+  deleteGalleryPhoto,
   deleteGuest,
   deleteTable,
   getGalleryBudgetStatus,
@@ -15,6 +16,7 @@ import {
   listGuests,
   listAccessTokens,
   listGalleryPhotos,
+  listGalleryPhotosPage,
   listTables,
   recordOriginalDownloadUrl,
   revokeAccessToken,
@@ -29,7 +31,7 @@ import {
   validateGalleryToken,
 } from './db.js'
 import { generateGalleryDerivatives } from './galleryImages.js'
-import { isR2Configured, listR2Objects, presignR2Url, publicR2Url } from './r2.js'
+import { deleteR2Object, isR2Configured, listR2Objects, presignR2Url, publicR2Url } from './r2.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
@@ -114,6 +116,43 @@ function titleFromR2Key(key) {
   return path.basename(String(key || 'photo'), path.extname(String(key || ''))).replace(/[-_]+/g, ' ').trim() || 'Photo'
 }
 
+function galleryPhotoPayload(photo) {
+  const displayKey = photo.display_key || photo.thumb_key
+  const thumbKey = photo.thumb_key || photo.display_key
+  return {
+    id: photo.id,
+    title: photo.title,
+    width: photo.width,
+    height: photo.height,
+    bytes: photo.bytes,
+    thumb_url: publicR2Url(thumbKey) || (thumbKey && isR2Configured()
+      ? presignR2Url({ method: 'GET', key: thumbKey, expiresIn: DISPLAY_URL_EXPIRES_SECONDS, disposition: null })
+      : null),
+    display_url: publicR2Url(displayKey) || (displayKey && isR2Configured()
+      ? presignR2Url({ method: 'GET', key: displayKey, expiresIn: DISPLAY_URL_EXPIRES_SECONDS, disposition: null })
+      : null),
+    has_original: !!photo.original_key,
+  }
+}
+
+function paginationParams(req) {
+  return {
+    limit: req.query.limit,
+    offset: req.query.offset,
+  }
+}
+
+function galleryPagePayload(page) {
+  return {
+    photos: page.photos.map(galleryPhotoPayload),
+    total: page.total,
+    limit: page.limit,
+    offset: page.offset,
+    next_offset: page.next_offset,
+    has_more: page.has_more,
+  }
+}
+
 // ---- guests API ----
 app.get('/api/guests', (_req, res) => res.json(listGuests()))
 
@@ -165,32 +204,16 @@ app.delete('/api/tables/:id', (req, res) => {
 // ---- public gallery API (capability-token protected, no Basic Auth prompt) ----
 app.get('/api/gallery', (req, res) => {
   const token = String(req.query.token || '')
-  const access = validateGalleryToken(token, { markSeen: true })
+  const offset = Math.max(0, Number(req.query.offset) || 0)
+  const access = validateGalleryToken(token, { markSeen: offset === 0 })
   if (!access) return res.status(401).json({ error: 'invalid or expired gallery link' })
 
-  const photos = listGalleryPhotos().map((photo) => {
-    const displayKey = photo.display_key || photo.thumb_key
-    const thumbKey = photo.thumb_key || photo.display_key
-    return {
-      id: photo.id,
-      title: photo.title,
-      width: photo.width,
-      height: photo.height,
-      bytes: photo.bytes,
-      thumb_url: publicR2Url(thumbKey) || (thumbKey && isR2Configured()
-        ? presignR2Url({ method: 'GET', key: thumbKey, expiresIn: DISPLAY_URL_EXPIRES_SECONDS, disposition: null })
-        : null),
-      display_url: publicR2Url(displayKey) || (displayKey && isR2Configured()
-        ? presignR2Url({ method: 'GET', key: displayKey, expiresIn: DISPLAY_URL_EXPIRES_SECONDS, disposition: null })
-        : null),
-      has_original: !!photo.original_key,
-    }
-  })
+  const page = galleryPagePayload(listGalleryPhotosPage(paginationParams(req)))
 
   res.json({
     album: { id: 1, title: 'Wedding' },
     guest: { label: access.label, default_lang: access.default_lang },
-    photos,
+    ...page,
   })
 })
 
@@ -279,7 +302,54 @@ app.get('/api/admin/gallery/photos', (_req, res) => {
   res.json(listGalleryPhotos())
 })
 
-app.post('/api/admin/gallery/photos', (req, res) => {
+app.delete('/api/admin/gallery/photos/:id', async (req, res) => {
+  const photo = deleteGalleryPhoto(Number(req.params.id))
+  if (!photo) return res.status(404).json({ error: 'photo not found' })
+
+  const cleanupErrors = []
+  if (isR2Configured()) {
+    const keys = [...new Set([photo.original_key, photo.thumb_key, photo.display_key].filter(Boolean))]
+    await Promise.all(
+      keys.map(async (key) => {
+        try {
+          await deleteR2Object(key)
+        } catch (err) {
+          cleanupErrors.push({ key, error: err.message || 'delete failed' })
+        }
+      }),
+    )
+  }
+
+  res.json({ deleted: photo, cleanup_errors: cleanupErrors })
+})
+
+app.get('/api/admin/gallery/preview', (req, res) => {
+  const page = galleryPagePayload(listGalleryPhotosPage(paginationParams(req)))
+  res.json({
+    album: { id: 1, title: 'Wedding' },
+    guest: { label: null, default_lang: 'it', preview: true },
+    ...page,
+  })
+})
+
+app.post('/api/admin/gallery/photos/:id/download-url', (req, res) => {
+  if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
+  const photo = getGalleryPhoto(Number(req.params.id))
+  if (!photo?.original_key) return res.status(404).json({ error: 'photo not found' })
+
+  res.json({
+    url: presignR2Url({
+      method: 'GET',
+      key: photo.original_key,
+      expiresIn: DOWNLOAD_URL_EXPIRES_SECONDS,
+      filename: path.basename(photo.original_key),
+      disposition: 'attachment',
+    }),
+    expires_in: DOWNLOAD_URL_EXPIRES_SECONDS,
+  })
+})
+
+app.post('/api/admin/gallery/photos', requireAdminKey, (req, res) => {
   try {
     res.status(201).json(upsertGalleryPhoto(req.body ?? {}))
   } catch (err) {
@@ -325,7 +395,7 @@ app.post('/api/admin/gallery/upload-url', (req, res) => {
   })
 })
 
-app.post('/api/admin/gallery/import-r2', async (req, res) => {
+app.post('/api/admin/gallery/import-r2', requireAdminKey, async (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
   if (blockIfGalleryBudgetExceeded(res)) return
 

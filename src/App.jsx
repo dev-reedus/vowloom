@@ -25,7 +25,7 @@ function AdminApp() {
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState(loadLang)
-  const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'guestLinksAdmin'
+  const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'galleryPreview' | 'guestLinksAdmin'
   // Admin-only tools (e.g. DB backup) are gated behind localStorage mode="admin".
   const [adminKey] = useState(() => {
     try {
@@ -129,7 +129,7 @@ function AdminApp() {
   }
 
   return (
-    <div className="page">
+    <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''}`}>
       <motion.button
         className="lang-toggle"
         onClick={() => setLang((p) => nextLang(p))}
@@ -151,6 +151,9 @@ function AdminApp() {
         <button className={view === 'galleryAdmin' ? 'on' : ''} onClick={() => setView('galleryAdmin')}>
           {t.navGallery}
         </button>
+        <button className={view === 'galleryPreview' ? 'on' : ''} onClick={() => setView('galleryPreview')}>
+          {t.navGalleryPreview}
+        </button>
         <button className={view === 'guestLinksAdmin' ? 'on' : ''} onClick={() => setView('guestLinksAdmin')}>
           {t.navGuestLinks}
         </button>
@@ -158,6 +161,8 @@ function AdminApp() {
 
       {view === 'galleryAdmin' ? (
         <GalleryAdminPage adminKey={adminKey} t={t} />
+      ) : view === 'galleryPreview' ? (
+        <GalleryPage adminKey={adminKey} preview lang={lang} showLangToggle={false} />
       ) : view === 'guestLinksAdmin' ? (
         <GuestLinksAdminPage adminKey={adminKey} t={t} />
       ) : view === 'list' ? (

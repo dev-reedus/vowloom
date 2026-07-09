@@ -495,9 +495,37 @@ export function listGalleryPhotos() {
     .map(toPhoto)
 }
 
+export function listGalleryPhotosPage({ limit = 48, offset = 0 } = {}) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 48, 100))
+  const safeOffset = Math.max(0, Number(offset) || 0)
+  const photos = db
+    .prepare('SELECT * FROM gallery_photos ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?')
+    .all(safeLimit, safeOffset)
+    .map(toPhoto)
+  const { total } = db.prepare('SELECT COUNT(*) AS total FROM gallery_photos').get()
+  return {
+    photos,
+    total,
+    limit: safeLimit,
+    offset: safeOffset,
+    next_offset: safeOffset + photos.length,
+    has_more: safeOffset + photos.length < total,
+  }
+}
+
 export function getGalleryPhoto(id) {
   const row = db.prepare('SELECT * FROM gallery_photos WHERE id = ?').get(id)
   return row ? toPhoto(row) : null
+}
+
+export function deleteGalleryPhoto(id) {
+  const photo = getGalleryPhoto(id)
+  if (!photo) return null
+  db.transaction(() => {
+    db.prepare('DELETE FROM gallery_download_events WHERE photo_id = ?').run(photo.id)
+    db.prepare('DELETE FROM gallery_photos WHERE id = ?').run(photo.id)
+  })()
+  return photo
 }
 
 export function upsertGalleryPhoto(fields = {}) {

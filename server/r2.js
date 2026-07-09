@@ -40,8 +40,12 @@ function encodeKey(key) {
 
 function canonicalQuery(params) {
   return [...params.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${encodePathPart(key)}=${encodePathPart(value)}`)
+    .map(([key, value]) => [encodePathPart(key), encodePathPart(value)])
+    .sort(([aKey, aValue], [bKey, bValue]) => {
+      if (aKey === bKey) return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      return aKey < bKey ? -1 : 1
+    })
+    .map(([key, value]) => `${key}=${value}`)
     .join('&')
 }
 
@@ -165,7 +169,7 @@ function parseListObjectsXml(xml) {
   }
 }
 
-export const __test = { parseListObjectsXml }
+export const __test = { canonicalQuery, parseListObjectsXml }
 
 export async function listR2Objects({ prefix = '', maxKeys = 1000 } = {}) {
   const objects = []
@@ -210,4 +214,11 @@ export async function putR2ObjectBuffer(key, body, { contentType = 'application/
     body,
   })
   if (!response.ok) throw new Error(`R2 PUT ${key} failed with ${response.status}`)
+}
+
+export async function deleteR2Object(key) {
+  if (!key) return
+  const url = presignR2Url({ method: 'DELETE', key, expiresIn: 600, disposition: null })
+  const response = await fetch(url, { method: 'DELETE' })
+  if (!response.ok) throw new Error(`R2 DELETE ${key} failed with ${response.status}`)
 }

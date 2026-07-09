@@ -5,6 +5,10 @@
   padding: 3rem 1.25rem 4rem;
 }
 
+.page--wide {
+  max-width: 1120px;
+}
+
 /* ---------- Language toggle ---------- */
 .lang-toggle {
   position: absolute;
@@ -471,20 +475,28 @@
 
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 320px));
+  grid-auto-flow: dense;
+  grid-auto-rows: 8px;
+  justify-content: center;
+  gap: 0.9rem;
 }
 
 .photo-tile {
   position: relative;
+  display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(194, 168, 120, 0.35);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 252, 250, 0.76);
   color: var(--ink-soft);
-  box-shadow: 0 8px 20px rgba(90, 74, 69, 0.08);
+  box-shadow: 0 10px 24px rgba(90, 74, 69, 0.1);
+  text-decoration: none;
+  transform: translateZ(0);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .photo-tile img {
@@ -492,6 +504,18 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.photo-tile.is-pswp-source img {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .photo-tile:hover {
+    border-color: rgba(194, 168, 120, 0.62);
+    box-shadow: 0 16px 34px rgba(90, 74, 69, 0.16);
+    transform: translateY(-2px);
+  }
 }
 
 .photo-tile span {
@@ -502,59 +526,6 @@
   padding: 0.75rem;
 }
 
-.lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  padding: 1rem;
-  background: rgba(31, 26, 24, 0.92);
-}
-
-.lightbox-close {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 21;
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgba(255, 252, 250, 0.35);
-  border-radius: 50%;
-  color: var(--white);
-  background: rgba(90, 74, 69, 0.55);
-  font-size: 1.2rem;
-}
-
-.lightbox-media {
-  min-height: 0;
-  display: grid;
-  place-items: center;
-}
-
-.lightbox-media img {
-  max-width: 100%;
-  max-height: calc(100vh - 120px);
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.lightbox-media p {
-  color: var(--white);
-}
-
-.lightbox-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: min(860px, 100%);
-  margin: 0 auto;
-  padding: 0.85rem 0;
-  color: var(--white);
-}
-
-.lightbox-bar button,
 .admin-form button,
 .admin-actions button {
   padding: 0.65rem 1rem;
@@ -565,11 +536,91 @@
   box-shadow: 0 6px 18px rgba(176, 125, 125, 0.25);
 }
 
-.lightbox-bar button:disabled,
 .admin-form button:disabled,
 .admin-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.pswp__button--download-original {
+  width: auto;
+  min-width: 9.5rem;
+  padding: 0 0.9rem;
+  color: var(--white);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 50px;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pswp__button--download-original:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pswp__button--delete-photo {
+  width: auto;
+  min-width: 5.75rem;
+  padding: 0 0.9rem;
+  color: var(--white);
+  background: rgba(111, 42, 41, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 50px;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pswp__button--delete-photo:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pswp__caption {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--white);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(31, 26, 24, 0.75);
+  pointer-events: none;
+}
+
+.gallery-load-more {
+  min-height: 3rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .photo-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: 0.6rem;
+  }
+
+  .photo-tile {
+    grid-row-end: auto !important;
+    height: auto;
+    min-height: 0;
+  }
+
+  .photo-tile img {
+    height: auto;
+    object-fit: contain;
+  }
 }
 
 /* ---------- Gallery admin ---------- */
@@ -726,6 +777,7 @@ input[type='number']::-webkit-inner-spin-button {
 .admin-select-wrap {
   position: relative;
   display: block;
+  width: 100%;
   min-width: 0;
 }
 
@@ -748,6 +800,14 @@ input[type='number']::-webkit-inner-spin-button {
 .admin-field {
   display: grid;
   gap: 0.4rem;
+}
+
+.guest-link-form {
+  grid-template-columns: minmax(180px, 1.1fr) minmax(160px, 1fr) minmax(120px, 0.45fr) auto;
+}
+
+.guest-link-language-select {
+  min-width: 0;
 }
 
 .admin-field-label {
@@ -978,7 +1038,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .admin-row > div,
-.photo-admin-item {
+.photo-admin-item > div {
   min-width: 0;
 }
 
@@ -998,14 +1058,26 @@ input[type='number']::-webkit-inner-spin-button {
 .admin-actions {
   display: flex;
   gap: 0.45rem;
+  min-width: max-content;
+  justify-content: flex-end;
+}
+
+.admin-actions .danger {
+  background: linear-gradient(135deg, #9f423f, #6f2a29);
+  box-shadow: 0 6px 18px rgba(111, 42, 41, 0.2);
 }
 
 .photo-admin-item {
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.photo-admin-item.has-actions {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) auto;
 }
 
 @media (max-width: 720px) {
   .admin-form,
+  .guest-link-form,
   .gallery-status-panel,
   .gallery-status-panel form,
   .upload-admin-form,
@@ -1029,10 +1101,10 @@ input[type='number']::-webkit-inner-spin-button {
     justify-content: flex-start;
   }
 
-  .lightbox-bar {
-    align-items: stretch;
-    flex-direction: column;
+  .guest-link-form > * {
+    width: 100%;
   }
+
 }
 
 .backup-btn {
@@ -1178,9 +1250,11 @@ input[type='number']::-webkit-inner-spin-button {
 /* ---------- Tabs (nav) ---------- */
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 0.3rem;
   width: fit-content;
+  max-width: 100%;
   margin: 0 auto 1.75rem;
   padding: 0.3rem;
   background: rgba(255, 255, 255, 0.6);

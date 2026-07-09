@@ -204,6 +204,7 @@ export default function GalleryAdminPage({ adminKey, t }) {
   const budget = adminStatus?.budget
   const budgetExceeded = !!budget?.budget_exceeded
   const canConfigureBudget = !!adminKey
+  const canUseSensitiveGalleryTools = !!adminKey
 
   return (
     <section className="admin-panel">
@@ -303,60 +304,66 @@ export default function GalleryAdminPage({ adminKey, t }) {
         </section>
       )}
 
-      <form className="admin-form" onSubmit={importR2Originals}>
-        <AdminTextInput
-          value={importPrefix}
-          onChange={(e) => setImportPrefix(e.target.value)}
-          placeholder={t.galleryAdminImportPrefix}
-        />
-        <button type="submit" disabled={budgetExceeded || !adminStatus?.r2_configured}>
-          {t.galleryAdminImport}
-        </button>
-      </form>
+      {canUseSensitiveGalleryTools && (
+        <form className="admin-form" onSubmit={importR2Originals}>
+          <AdminTextInput
+            value={importPrefix}
+            onChange={(e) => setImportPrefix(e.target.value)}
+            placeholder={t.galleryAdminImportPrefix}
+          />
+          <button type="submit" disabled={budgetExceeded || !adminStatus?.r2_configured}>
+            {t.galleryAdminImport}
+          </button>
+        </form>
+      )}
 
-      <form className="admin-form admin-form--stack" onSubmit={savePhoto}>
-        <AdminTextInput
-          value={photoFields.title}
-          onChange={(e) => setPhotoFields((p) => ({ ...p, title: e.target.value }))}
-          placeholder={t.galleryAdminTitlePlaceholder}
-        />
-        <AdminTextInput
-          value={photoFields.original_key}
-          onChange={(e) => setPhotoFields((p) => ({ ...p, original_key: e.target.value }))}
-          placeholder={t.galleryAdminOriginalKeyPlaceholder}
-        />
-        <AdminTextInput
-          value={photoFields.thumb_key}
-          onChange={(e) => setPhotoFields((p) => ({ ...p, thumb_key: e.target.value }))}
-          placeholder={t.galleryAdminThumbKeyPlaceholder}
-        />
-        <AdminTextInput
-          value={photoFields.display_key}
-          onChange={(e) => setPhotoFields((p) => ({ ...p, display_key: e.target.value }))}
-          placeholder={t.galleryAdminDisplayKeyPlaceholder}
-        />
-        <button type="submit">{t.galleryAdminSaveMetadata}</button>
-      </form>
+      {canUseSensitiveGalleryTools && (
+        <>
+          <form className="admin-form admin-form--stack" onSubmit={savePhoto}>
+            <AdminTextInput
+              value={photoFields.title}
+              onChange={(e) => setPhotoFields((p) => ({ ...p, title: e.target.value }))}
+              placeholder={t.galleryAdminTitlePlaceholder}
+            />
+            <AdminTextInput
+              value={photoFields.original_key}
+              onChange={(e) => setPhotoFields((p) => ({ ...p, original_key: e.target.value }))}
+              placeholder={t.galleryAdminOriginalKeyPlaceholder}
+            />
+            <AdminTextInput
+              value={photoFields.thumb_key}
+              onChange={(e) => setPhotoFields((p) => ({ ...p, thumb_key: e.target.value }))}
+              placeholder={t.galleryAdminThumbKeyPlaceholder}
+            />
+            <AdminTextInput
+              value={photoFields.display_key}
+              onChange={(e) => setPhotoFields((p) => ({ ...p, display_key: e.target.value }))}
+              placeholder={t.galleryAdminDisplayKeyPlaceholder}
+            />
+            <button type="submit">{t.galleryAdminSaveMetadata}</button>
+          </form>
 
-      <div className="photo-admin-list">
-        {photos.map((photo) => (
-          <div className="photo-admin-item" key={photo.id}>
-            <div>
-              <strong>{photo.title}</strong>
-              <span>{photo.original_key}</span>
-            </div>
-            <div>
-              <span>{photo.thumb_key || t.galleryAdminNoThumb}</span>
-              <span>{photo.display_key || t.galleryAdminNoDisplay}</span>
-            </div>
-            <div className="admin-actions">
-              <button type="button" onClick={() => generateDerivatives(photo)} disabled={budgetExceeded}>
-                {t.galleryAdminGenerate}
-              </button>
-            </div>
+          <div className="photo-admin-list">
+            {photos.map((photo) => (
+              <div className="photo-admin-item has-actions" key={photo.id}>
+                <div>
+                  <strong>{photo.title}</strong>
+                  <span>{photo.original_key}</span>
+                </div>
+                <div>
+                  <span>{photo.thumb_key || t.galleryAdminNoThumb}</span>
+                  <span>{photo.display_key || t.galleryAdminNoDisplay}</span>
+                </div>
+                <div className="admin-actions">
+                  <button type="button" onClick={() => generateDerivatives(photo)} disabled={budgetExceeded}>
+                    {t.galleryAdminGenerate}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </section>
   )
 }

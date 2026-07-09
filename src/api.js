@@ -40,7 +40,7 @@ export const api = {
   removeTable: (id) => req(`/api/tables/${id}`, { method: 'DELETE' }),
 
   // public gallery
-  gallery: (token) => req(`/api/gallery?token=${encodeURIComponent(token)}`),
+  gallery: (token, params) => req(`/api/gallery?${galleryQuery({ ...(params || {}), token })}`),
   originalDownloadUrl: (photoId, token) =>
     req(`/api/gallery/photos/${photoId}/download-url`, {
       method: 'POST',
@@ -67,6 +67,18 @@ export const api = {
       headers: adminHeaders(adminKey),
     }),
   listGalleryPhotos: (adminKey) => req('/api/admin/gallery/photos', { headers: adminHeaders(adminKey) }),
+  deleteGalleryPhoto: (adminKey, photoId) =>
+    req(`/api/admin/gallery/photos/${photoId}`, {
+      method: 'DELETE',
+      headers: adminHeaders(adminKey),
+    }),
+  galleryPreview: (adminKey, params) =>
+    req(`/api/admin/gallery/preview?${galleryQuery(params || {})}`, { headers: adminHeaders(adminKey) }),
+  adminOriginalDownloadUrl: (adminKey, photoId) =>
+    req(`/api/admin/gallery/photos/${photoId}/download-url`, {
+      method: 'POST',
+      headers: adminHeaders(adminKey),
+    }),
   galleryAdminStatus: (adminKey) => req('/api/admin/gallery/status', { headers: adminHeaders(adminKey) }),
   updateGalleryBudget: (adminKey, monthlyBudgetUsd) =>
     req('/api/admin/gallery/settings/budget', {
@@ -101,4 +113,12 @@ export const api = {
 
 function adminHeaders(adminKey) {
   return { ...JSON_HEADERS, 'X-Admin-Key': adminKey || '' }
+}
+
+function galleryQuery(params = {}) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') query.set(key, value)
+  }
+  return query.toString()
 }

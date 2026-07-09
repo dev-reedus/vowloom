@@ -33,9 +33,11 @@ const {
   addGuest,
   backupDatabase,
   createAccessToken,
+  deleteGalleryPhoto,
   getGalleryBudgetStatus,
   getGalleryPhoto,
   listAccessTokens,
+  listGalleryPhotosPage,
   listGuests,
   recordOriginalDownloadUrl,
   revokeAccessToken,
@@ -143,6 +145,39 @@ test('gallery photo metadata can be saved and download URL events are counted', 
   assert.equal(getGalleryPhoto(photo.id).title, 'First Dance')
   recordOriginalDownloadUrl({ token: token.token, photo_id: photo.id, ip_hash: 'abc', user_agent: 'test' })
   assert.equal(validateGalleryToken(token.token).download_url_count, 1)
+})
+
+test('gallery photos can be deleted with their download events', () => {
+  const token = createAccessToken({ label: 'Photo Delete Tester' })
+  const photo = upsertGalleryPhoto({
+    title: 'Delete Me',
+    original_key: 'originals/delete-me.jpg',
+    thumb_key: 'thumbs/delete-me.jpg',
+    display_key: 'display/delete-me.jpg',
+  })
+  recordOriginalDownloadUrl({ token: token.token, photo_id: photo.id, ip_hash: 'abc', user_agent: 'test' })
+
+  const deleted = deleteGalleryPhoto(photo.id)
+  assert.equal(deleted.id, photo.id)
+  assert.equal(deleted.original_key, 'originals/delete-me.jpg')
+  assert.equal(getGalleryPhoto(photo.id), null)
+  assert.equal(deleteGalleryPhoto(photo.id), null)
+})
+
+test('gallery photos can be listed in pages', () => {
+  const first = upsertGalleryPhoto({ title: 'Page A', original_key: 'originals/page-a.jpg' })
+  const second = upsertGalleryPhoto({ title: 'Page B', original_key: 'originals/page-b.jpg' })
+
+  const page = listGalleryPhotosPage({ limit: 1, offset: 0 })
+  assert.equal(page.photos.length, 1)
+  assert.equal(page.total >= 2, true)
+  assert.equal(page.has_more, true)
+  assert.equal(page.next_offset, 1)
+  assert.equal(page.photos[0].id, second.id)
+
+  const nextPage = listGalleryPhotosPage({ limit: 1, offset: 1 })
+  assert.equal(nextPage.photos.length, 1)
+  assert.equal(nextPage.photos[0].id, first.id)
 })
 
 test('gallery budget status estimates storage and persists the monthly budget', () => {

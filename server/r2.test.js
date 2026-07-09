@@ -2,6 +2,20 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { __test } from './r2.js'
 
+test('canonicalQuery sorts encoded SigV4 query params by byte order', () => {
+  const params = new URLSearchParams({
+    'list-type': '2',
+    'max-keys': '1',
+    'X-Amz-Date': '20260709T221409Z',
+    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+  })
+
+  assert.equal(
+    __test.canonicalQuery(params),
+    'X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260709T221409Z&list-type=2&max-keys=1',
+  )
+})
+
 test('parseListObjectsXml reads keys, sizes, and continuation token', () => {
   const parsed = __test.parseListObjectsXml(`
     <ListBucketResult>

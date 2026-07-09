@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
-import { AdminDateTimeInput, AdminSelect, AdminTextInput } from '../components/AdminControls'
+import { AdminDateTimeInput, AdminTextInput } from '../components/AdminControls'
 
 function localDateTimeInDays(days) {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
@@ -108,10 +108,11 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
 
       {canManageLinks ? (
         <>
-          <form className="admin-form" onSubmit={createToken}>
+          <form className="admin-form guest-link-form" onSubmit={createToken}>
             <AdminTextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t.guestLinksLabelPlaceholder} />
             <AdminTextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.guestLinksNotePlaceholder} />
-            <AdminSelect
+            <select
+              className="admin-input guest-link-language-select"
               value={defaultLang}
               onChange={(e) => setDefaultLang(e.target.value)}
               aria-label={t.guestLinksDefaultLanguage}
@@ -120,7 +121,7 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
               <option value="it">Italiano</option>
               <option value="en">English</option>
               <option value="ro">Română</option>
-            </AdminSelect>
+            </select>
             <button type="submit">{t.guestLinksCreate}</button>
           </form>
 
