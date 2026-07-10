@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
-import { AdminDateTimeInput, AdminTextInput } from '../components/AdminControls'
+import { AdminDateTimeInput, AdminSelect, AdminTextInput } from '../components/AdminControls'
+
+const LANGUAGE_OPTIONS = [
+  { value: 'it', label: 'Italiano' },
+  { value: 'en', label: 'English' },
+  { value: 'ro', label: 'Română' },
+]
 
 function localDateTimeInDays(days) {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
@@ -111,17 +117,14 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
           <form className="admin-form guest-link-form" onSubmit={createToken}>
             <AdminTextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t.guestLinksLabelPlaceholder} />
             <AdminTextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.guestLinksNotePlaceholder} />
-            <select
-              className="admin-input guest-link-language-select"
+            <AdminSelect
+              className="guest-link-language-select"
               value={defaultLang}
-              onChange={(e) => setDefaultLang(e.target.value)}
+              onChange={setDefaultLang}
+              options={LANGUAGE_OPTIONS}
               aria-label={t.guestLinksDefaultLanguage}
               title={t.guestLinksDefaultLanguage}
-            >
-              <option value="it">Italiano</option>
-              <option value="en">English</option>
-              <option value="ro">Română</option>
-            </select>
+            />
             <button type="submit">{t.guestLinksCreate}</button>
           </form>
 

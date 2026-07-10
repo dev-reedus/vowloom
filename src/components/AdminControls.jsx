@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 export function formatBytes(bytes) {
   const value = Number(bytes) || 0
@@ -11,14 +11,131 @@ export function AdminTextInput({ className = '', ...props }) {
   return <input className={`admin-input ${className}`.trim()} {...props} />
 }
 
-export function AdminSelect({ className = '', children, ...props }) {
+// Custom listbox dropdown. Avoids the native <select> popup, which on mobile
+// gets rendered by the OS detached from the trigger, and lets us match the
+// app's pill/blush styling. Uses the aria-activedescendant listbox pattern:
+// focus stays on the trigger button while arrow keys move the active option.
+export function AdminSelect({
+  value,
+  onChange,
+  options = [],
+  placeholder = '',
+  className = '',
+  ...triggerProps
+}) {
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const rootRef = useRef(null)
+  const listId = useId()
+  const selected = options.find((opt) => opt.value === value)
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onPointerDown(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const idx = options.findIndex((opt) => opt.value === value)
+    setActiveIndex(idx >= 0 ? idx : 0)
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function commit(index) {
+    const opt = options[index]
+    if (opt) onChange?.(opt.value)
+    setOpen(false)
+  }
+
+  function onKeyDown(event) {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        if (open) setActiveIndex((i) => Math.min(options.length - 1, i + 1))
+        else setOpen(true)
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        if (open) setActiveIndex((i) => Math.max(0, i - 1))
+        else setOpen(true)
+        break
+      case 'Home':
+        if (open) {
+          event.preventDefault()
+          setActiveIndex(0)
+        }
+        break
+      case 'End':
+        if (open) {
+          event.preventDefault()
+          setActiveIndex(options.length - 1)
+        }
+        break
+      case 'Enter':
+      case ' ':
+        event.preventDefault()
+        if (open) commit(activeIndex)
+        else setOpen(true)
+        break
+      case 'Escape':
+        if (open) {
+          event.preventDefault()
+          setOpen(false)
+        }
+        break
+      case 'Tab':
+        setOpen(false)
+        break
+      default:
+        break
+    }
+  }
+
   return (
-    <span className={`admin-select-wrap ${className}`.trim()}>
-      <select className="admin-input admin-select" {...props}>
-        {children}
-      </select>
-      <span className="admin-select-chevron" aria-hidden="true" />
-    </span>
+    <div ref={rootRef} className={`admin-select-wrap ${className}`.trim()}>
+      <button
+        type="button"
+        className={`admin-input admin-select-trigger ${open ? 'is-open' : ''}`.trim()}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        aria-activedescendant={open ? `${listId}-opt-${activeIndex}` : undefined}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={onKeyDown}
+        {...triggerProps}
+      >
+        <span className={`admin-select-value ${selected ? '' : 'is-placeholder'}`.trim()}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span className="admin-select-chevron" aria-hidden="true" />
+      </button>
+      {open && (
+        <ul id={listId} className="admin-select-menu" role="listbox" tabIndex={-1}>
+          {options.map((opt, index) => (
+            <li
+              key={opt.value}
+              id={`${listId}-opt-${index}`}
+              role="option"
+              aria-selected={opt.value === value}
+              className={[
+                'admin-select-option',
+                index === activeIndex ? 'is-active' : '',
+                opt.value === value ? 'is-selected' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => commit(index)}
+            >
+              <span>{opt.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 

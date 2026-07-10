@@ -768,17 +768,47 @@ input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
 }
 
-.admin-select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 2.4rem;
-}
-
 .admin-select-wrap {
   position: relative;
   display: block;
   width: 100%;
   min-width: 0;
+}
+
+/* Scoped to .admin-select-wrap so these win over generic `.admin-form button`
+   (rose gradient + white text) the trigger would otherwise inherit. */
+.admin-select-wrap .admin-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-right: 2.4rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.admin-select-wrap .admin-select-trigger.is-open,
+.admin-select-wrap .admin-select-trigger:focus-visible {
+  color: var(--ink);
+  border-color: var(--gold);
+  background: rgba(255, 252, 250, 0.92);
+  box-shadow: 0 0 0 3px rgba(194, 168, 120, 0.18);
+  outline: none;
+}
+
+.admin-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-select-value.is-placeholder {
+  color: var(--ink-soft);
 }
 
 .admin-select-chevron {
@@ -791,10 +821,77 @@ input[type='number']::-webkit-inner-spin-button {
   border-bottom: 2px solid var(--ink-soft);
   pointer-events: none;
   transform: translateY(-65%) rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.admin-select:focus + .admin-select-chevron {
+.admin-select-trigger.is-open .admin-select-chevron {
   border-color: var(--rose-deep);
+  transform: translateY(-35%) rotate(225deg);
+}
+
+.admin-select-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 0.35rem;
+  max-height: 260px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--white);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 18px 40px -20px rgba(90, 74, 69, 0.45);
+  animation: admin-select-pop 0.14s ease-out;
+}
+
+@keyframes admin-select-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.admin-select-option.is-active {
+  background: var(--blush);
+}
+
+.admin-select-option.is-selected {
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+
+.admin-select-option.is-selected::after {
+  content: '✓';
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--rose-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-select-menu {
+    animation: none;
+  }
+
+  .admin-select-chevron {
+    transition: none;
+  }
 }
 
 .admin-field {
