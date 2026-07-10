@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import 'photoswipe/style.css'
 import { api } from '../api'
-import { getStoredLang, LANG_KEY, nextLang, normalizeLang, translations } from '../i18n'
+import { getStoredGalleryLang, nextLang, normalizeLang, setStoredGalleryLang, translations } from '../i18n'
 
 const GALLERY_PAGE_SIZE = 48
 
@@ -103,7 +103,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [pageInfo, setPageInfo] = useState({ has_more: false, next_offset: 0 })
-  const [localLang, setLocalLang] = useState(() => getStoredLang() || 'it')
+  const [localLang, setLocalLang] = useState(() => getStoredGalleryLang() || 'it')
   const lang = normalizeLang(forcedLang || localLang)
   const t = translations[lang]
   const photosRef = useRef([])
@@ -128,7 +128,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
           has_more: !!payload?.has_more,
           next_offset: Number(payload?.next_offset) || 0,
         })
-        if (!forcedLang && !getStoredLang()) setLocalLang(normalizeLang(payload?.guest?.default_lang))
+        if (!forcedLang && !getStoredGalleryLang()) setLocalLang(normalizeLang(payload?.guest?.default_lang))
       })
       .catch(() => alive && setError(t.galleryInvalidLink))
       .finally(() => alive && setLoading(false))
@@ -297,11 +297,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
   function changeLang() {
     setLocalLang((current) => {
       const next = nextLang(current)
-      try {
-        localStorage.setItem(LANG_KEY, next)
-      } catch {
-        /* ignore */
-      }
+      setStoredGalleryLang(next)
       return next
     })
   }

@@ -575,6 +575,9 @@ export const translations = {
 }
 
 export const LANG_KEY = 'nozze.lang.v1'
+// Guest gallery keeps its own language, independent from the main/admin app so a
+// guest link honours its token default_lang and remembers the guest's own choice.
+export const GALLERY_LANG_KEY = 'nozze.gallery.lang.v1'
 export const SUPPORTED_LANGS = ['it', 'en', 'ro']
 
 export function normalizeLang(lang) {
@@ -597,4 +600,21 @@ export function getStoredLang() {
 
 export function loadLang() {
   return getStoredLang() || 'it'
+}
+
+export function getStoredGalleryLang() {
+  try {
+    const saved = localStorage.getItem(GALLERY_LANG_KEY)
+    return SUPPORTED_LANGS.includes(saved) ? saved : null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredGalleryLang(lang) {
+  try {
+    localStorage.setItem(GALLERY_LANG_KEY, normalizeLang(lang))
+  } catch {
+    /* ignore */
+  }
 }
