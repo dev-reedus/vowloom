@@ -1,4 +1,13 @@
+import crypto from 'node:crypto'
 import { ADMIN_KEY, AUTH_PASSWORD, AUTH_USER } from '../config.js'
+
+// Constant-time string compare. Hashing first gives equal-length buffers, so the
+// comparison leaks neither the secret's length nor a matching prefix via timing.
+function safeEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest()
+  const hb = crypto.createHash('sha256').update(String(b)).digest()
+  return crypto.timingSafeEqual(ha, hb)
+}
 
 // Routes reachable without the Basic Auth prompt: the guest gallery (token protected instead),
 // static assets, and a couple of well-known files.
@@ -25,7 +34,10 @@ export function basicAuth() {
     const [scheme, encoded] = header.split(' ')
     if (scheme === 'Basic' && encoded) {
       const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':')
-      if (user === AUTH_USER && pass === AUTH_PASSWORD) return next()
+      // Evaluate both before AND-ing so neither result short-circuits the other.
+      const okUser = safeEqual(user, AUTH_USER)
+      const okPass = safeEqual(pass, AUTH_PASSWORD)
+      if (okUser && okPass) return next()
     }
     res.set('WWW-Authenticate', 'Basic realm="Le Nostre Nozze"')
     res.status(401).send('Authentication required')
@@ -35,6 +47,6 @@ export function basicAuth() {
 // Gate for local-admin write endpoints, layered on top of Basic Auth.
 export function requireAdminKey(req, res, next) {
   const key = req.get('x-admin-key') || ''
-  if (key && key === ADMIN_KEY) return next()
+  if (key && safeEqual(key, ADMIN_KEY)) return next()
   res.status(403).json({ error: 'admin key required' })
 }

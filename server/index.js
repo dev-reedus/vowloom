@@ -1,13 +1,16 @@
 import path from 'node:path'
 import express from 'express'
 import { seedIfEmpty, seedTablesIfEmpty } from './db.js'
-import { DIST_DIR, PORT } from './config.js'
+import { assertAuthConfig, DIST_DIR, PORT } from './config.js'
 import { basicAuth } from './middleware/auth.js'
 import { guestsRouter } from './routes/guests.js'
 import { tablesRouter } from './routes/tables.js'
 import { galleryRouter } from './routes/gallery.js'
 import { guestLinksRouter } from './routes/guestLinks.js'
 import { galleryAdminRouter } from './routes/galleryAdmin.js'
+
+// Fail closed on missing/guessable auth secrets before we bind the port.
+assertAuthConfig()
 
 const app = express()
 app.use(express.json())
