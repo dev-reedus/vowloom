@@ -4,7 +4,7 @@ A small, elegant React app to track wedding invitations. For each guest you get:
 
 - their **name**,
 - an **Invitation Sent** checkbox,
-- a **reply status** — *pending · accepted · maybe · declined*,
+- a **reply status** - *pending · accepted · maybe · declined*,
 - and a form to **add new guests**.
 
 The guest list shows a **stats dashboard** (counts per status plus a confirmed
@@ -19,7 +19,7 @@ database (`data/nozze.db`). In Docker the `data/` directory is a volume, so the
 list survives container `stop` / `rm` / redeploys.
 
 **Seeding:** on first start (empty DB only) the list is pre-populated from
-[`lista.txt`](./lista.txt) — one guest per line, `•` bullets and the
+[`lista.txt`](./lista.txt) - one guest per line, `•` bullets and the
 `Nome / Invito / Conferma` header are ignored. You can also add optional status
 flags: `Name | sent | accepted` (flag truthy for `1`/`x`/`yes`/`si`/`true`).
 Once seeded it is never overwritten, so edits made in the app are safe.
@@ -28,7 +28,7 @@ Once seeded it is never overwritten, so edits made in the app are safe.
 corner (defaults to Italian; the choice is remembered).
 
 **Password:** HTTP Basic Auth handled by the server. Real server-side
-protection — the API and app are gated until the browser authenticates.
+protection - the API and app are gated until the browser authenticates.
 
 ## Architecture
 
@@ -51,7 +51,7 @@ Run both: `npm start` in one terminal, `npm run dev` in another.
 
 > **Note:** `better-sqlite3` compiles a native addon and currently supports
 > Node ≤ 22. On a newer local Node, either use `nvm use 20` or just run
-> everything in Docker (below) — the image pins Node 20.
+> everything in Docker (below) - the image pins Node 20.
 
 ## Build
 
@@ -92,7 +92,7 @@ The Docker volume keeps the database across container `stop`/`rm`/redeploys, but
 **not** across a dead SD card. Keep an off-device copy:
 
 - **Backup:** click **Save backup** in the app footer (or open `/api/backup`).
-  You get a timestamped `nozze-backup-YYYY-MM-DD.db` — the full database (guests
+  You get a timestamped `nozze-backup-YYYY-MM-DD.db` - the full database (guests
   *and* tables). Save it somewhere off the Pi (phone, laptop, cloud drive).
 - **Restore:** drop that file back in as the database and restart:
 
@@ -120,7 +120,7 @@ cp .env.example .env      # then edit .env and set AUTH_PASSWORD
 ./deploy.sh
 ```
 
-Or pass values inline — these override `.env`:
+Or pass values inline - these override `.env`:
 
 ```bash
 HOST_PORT=80 AUTH_USER=george AUTH_PASSWORD='our-secret' ./deploy.sh

@@ -1,101 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import 'photoswipe/style.css'
 import { api } from '../api'
 import { getStoredGalleryLang, nextLang, normalizeLang, setStoredGalleryLang, translations } from '../i18n'
-
-const GALLERY_PAGE_SIZE = 48
-
-function photoDimensions(photo) {
-  const width = Number(photo?.width) > 0 ? Number(photo.width) : 1600
-  const height = Number(photo?.height) > 0 ? Number(photo.height) : Math.round(width * 0.667)
-  return { width, height }
-}
-
-function photoLightboxUrl(photo) {
-  return photo?.display_url || photo?.thumb_url || ''
-}
-
-function photoTileUrl(photo) {
-  return photo?.display_url || photo?.thumb_url || ''
-}
-
-function photoTileRowsForWidth(dimensions, tileWidth = 280, rowHeight = 8, rowGap = 0) {
-  const { width, height } = dimensions
-  const ratio = height / width
-  const targetHeight = Math.max(1, tileWidth * ratio)
-  const span = Math.ceil((targetHeight + rowGap) / (rowHeight + rowGap))
-  return Math.max(4, Math.min(80, span))
-}
-
-function updateDownloadButton(button, pswp, photos, t) {
-  const photo = photos[pswp.currIndex]
-  button.textContent = t.galleryDownloadOriginal
-  button.setAttribute('aria-label', t.galleryDownloadOriginal)
-  button.title = t.galleryDownloadOriginal
-  button.disabled = !photo?.has_original
-}
-
-function updateCaption(caption, pswp, photos) {
-  const title = photos[pswp.currIndex]?.title || ''
-  caption.textContent = title
-  caption.hidden = !title
-}
-
-function GalleryPhotoTile({ photo }) {
-  const ref = useRef(null)
-  const dimensions = photoDimensions(photo)
-  const [rowSpan, setRowSpan] = useState(() => photoTileRowsForWidth(dimensions, 280, 8, 14.4))
-  const url = photoLightboxUrl(photo)
-  const tileUrl = photoTileUrl(photo)
-
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return undefined
-
-    function updateSpan() {
-      const parentStyle = node.parentElement ? window.getComputedStyle(node.parentElement) : null
-      const rowHeight = parentStyle ? Number.parseFloat(parentStyle.gridAutoRows) || 8 : 8
-      const rowGap = parentStyle ? Number.parseFloat(parentStyle.rowGap) || 0 : 0
-      const tileWidth = node.getBoundingClientRect().width || 280
-      const nextSpan = photoTileRowsForWidth(dimensions, tileWidth, rowHeight, rowGap)
-      setRowSpan((current) => (current === nextSpan ? current : nextSpan))
-    }
-
-    updateSpan()
-    const observer = new ResizeObserver(updateSpan)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [dimensions.width, dimensions.height])
-
-  if (!url) {
-    return (
-      <span className="photo-tile photo-tile--empty" style={{ gridRowEnd: `span ${rowSpan}` }}>
-        <span>{photo.title}</span>
-      </span>
-    )
-  }
-
-  return (
-    <a
-      ref={ref}
-      className="photo-tile"
-      href={url}
-      data-pswp-width={dimensions.width}
-      data-pswp-height={dimensions.height}
-      style={{
-        aspectRatio: `${dimensions.width} / ${dimensions.height}`,
-        gridRowEnd: `span ${rowSpan}`,
-      }}
-    >
-      {tileUrl ? (
-        <img src={tileUrl} alt={photo.title} loading="lazy" decoding="async" />
-      ) : (
-        <span>{photo.title}</span>
-      )}
-    </a>
-  )
-}
+import { GALLERY_PAGE_SIZE } from './gallery/galleryUtils'
+import GalleryPhotoTile from './gallery/GalleryPhotoTile'
+import useGalleryLightbox from './gallery/useGalleryLightbox'
 
 export default function GalleryPage({ token, adminKey = '', preview = false, lang: forcedLang = '', showLangToggle = true }) {
   const [data, setData] = useState(null)
@@ -151,110 +60,14 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
     loadingMoreRef.current = loadingMore
   }, [photos, token, adminKey, t, loadingMore])
 
-  useEffect(() => {
-    if (photos.length === 0) return undefined
-
-    let downloadButton = null
-    let deleteButton = null
-    let caption = null
-    let activeTile = null
-    const lightbox = new PhotoSwipeLightbox({
-      gallery: '.photo-grid',
-      children: 'a.photo-tile',
-      pswpModule: () => import('photoswipe'),
-      bgOpacity: 1,
-      showHideAnimationType: 'zoom',
-      showAnimationDuration: 260,
-      hideAnimationDuration: 220,
-      thumbSelector: 'img',
-      padding: { top: 52, right: 16, bottom: 72, left: 16 },
-    })
-
-    lightbox.addFilter('clickedIndex', (clickedIndex, event) => {
-      activeTile = event.target?.closest?.('.photo-tile') || null
-      return clickedIndex
-    })
-
-    lightbox.on('uiRegister', () => {
-      lightbox.pswp.ui.registerElement({
-        name: 'download-original',
-        className: 'pswp__button--download-original',
-        isButton: true,
-        order: 9,
-        html: tRef.current.galleryDownloadOriginal,
-        title: tRef.current.galleryDownloadOriginal,
-        ariaLabel: tRef.current.galleryDownloadOriginal,
-        onInit: (element, pswp) => {
-          downloadButton = element
-          updateDownloadButton(element, pswp, photosRef.current, tRef.current)
-        },
-        onClick: async (_event, element, pswp) => {
-          const photo = photosRef.current[pswp.currIndex]
-          if (!photo?.has_original || element.disabled) return
-          await downloadOriginal(photo, element)
-        },
-      })
-
-      if (preview) {
-        lightbox.pswp.ui.registerElement({
-          name: 'delete-photo',
-          className: 'pswp__button--delete-photo',
-          isButton: true,
-          order: 10,
-          html: tRef.current.galleryAdminDelete,
-          title: tRef.current.galleryAdminDelete,
-          ariaLabel: tRef.current.galleryAdminDelete,
-          onInit: (element) => {
-            deleteButton = element
-          },
-          onClick: async (_event, element, pswp) => {
-            const photo = photosRef.current[pswp.currIndex]
-            if (!photo || element.disabled) return
-            await deletePreviewPhoto(photo, element, pswp)
-          },
-        })
-      }
-
-      lightbox.pswp.ui.registerElement({
-        name: 'caption',
-        className: 'pswp__caption',
-        appendTo: 'root',
-        onInit: (element, pswp) => {
-          caption = element
-          updateCaption(element, pswp, photosRef.current)
-        },
-      })
-    })
-
-    lightbox.on('change', () => {
-      if (downloadButton && lightbox.pswp) {
-        updateDownloadButton(downloadButton, lightbox.pswp, photosRef.current, tRef.current)
-      }
-      if (deleteButton) {
-        deleteButton.textContent = tRef.current.galleryAdminDelete
-        deleteButton.title = tRef.current.galleryAdminDelete
-        deleteButton.setAttribute('aria-label', tRef.current.galleryAdminDelete)
-      }
-      if (caption && lightbox.pswp) {
-        updateCaption(caption, lightbox.pswp, photosRef.current)
-      }
-    })
-
-    lightbox.on('openingAnimationStart', () => {
-      activeTile?.classList.add('is-pswp-source')
-    })
-
-    lightbox.on('destroy', () => {
-      activeTile?.classList.remove('is-pswp-source')
-      activeTile = null
-    })
-
-    lightbox.init()
-
-    return () => {
-      lightbox.destroy()
-    }
-  }, [photos.length, preview])
+  useGalleryLightbox({
+    photosLength: photos.length,
+    preview,
+    photosRef,
+    tRef,
+    onDownloadOriginal: downloadOriginal,
+    onDeletePhoto: deletePreviewPhoto,
+  })
 
   useEffect(() => {
     const target = loadMoreRef.current

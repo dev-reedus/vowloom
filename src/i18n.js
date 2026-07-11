@@ -10,7 +10,7 @@ export const translations = {
     add: 'Aggiungi',
     sent: 'Spedito',
     accepted: 'Confermato',
-    // reply status — full names (titles / aria) + short button faces
+    // reply status - full names (titles / aria) + short button faces
     statusAccepted: 'Confermato',
     statusMaybe: 'Forse',
     statusDeclined: 'Rifiutato',
@@ -19,7 +19,7 @@ export const translations = {
     btnMaybe: 'Forse',
     btnNo: 'No',
     remove: (name) => `Rimuovi ${name}`,
-    empty: 'Nessun invitato — aggiungi il primo qui sopra.',
+    empty: 'Nessun invitato - aggiungi il primo qui sopra.',
     searchPlaceholder: 'Cerca un invitato…',
     noResults: 'Nessun risultato.',
     filterAll: 'Tutti',
@@ -204,7 +204,7 @@ export const translations = {
     add: 'Add',
     sent: 'Sent',
     accepted: 'Accepted',
-    // reply status — full names (titles / aria) + short button faces
+    // reply status - full names (titles / aria) + short button faces
     statusAccepted: 'Accepted',
     statusMaybe: 'Maybe',
     statusDeclined: 'Declined',
@@ -213,7 +213,7 @@ export const translations = {
     btnMaybe: 'Maybe',
     btnNo: 'No',
     remove: (name) => `Remove ${name}`,
-    empty: 'No guests yet — add your first above.',
+    empty: 'No guests yet - add your first above.',
     searchPlaceholder: 'Search a guest…',
     noResults: 'No results.',
     filterAll: 'All',

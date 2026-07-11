@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Build and run the wedding guest-list app with Docker, locally, on whatever
-# machine you run this from (Raspberry Pi, laptop, server — any arch).
+# machine you run this from (Raspberry Pi, laptop, server - any arch).
 #
 # Usage:
 #   ./deploy.sh
@@ -72,7 +72,7 @@ fi
 
 # 2. Warn if the site would be left unprotected.
 if [ -z "${AUTH_PASSWORD}" ]; then
-  echo "!! AUTH_PASSWORD is not set — the site would be PUBLIC with no password." >&2
+  echo "!! AUTH_PASSWORD is not set - the site would be PUBLIC with no password." >&2
   echo "   Re-run with e.g.  AUTH_PASSWORD='our-secret' ./deploy.sh" >&2
   read -r -p "   Continue without a password anyway? [y/N] " reply
   case "${reply}" in
@@ -82,7 +82,7 @@ if [ -z "${AUTH_PASSWORD}" ]; then
 fi
 
 if [ -z "${ADMIN_KEY}" ]; then
-  echo "!! ADMIN_KEY is not set — gallery admin tools will fall back to the dev value 'admin'." >&2
+  echo "!! ADMIN_KEY is not set - gallery admin tools will fall back to the dev value 'admin'." >&2
   echo "   Set a long random ADMIN_KEY in .env before production deploy." >&2
   read -r -p "   Continue with the dev fallback anyway? [y/N] " reply
   case "${reply}" in

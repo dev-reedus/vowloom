@@ -1,0 +1,218 @@
+/* Guest list rows, status recognition, checkbox, status selector */
+/* ---------- Guest list ---------- */
+.guest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.guest {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(236, 217, 208, 0.9);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(176, 125, 125, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ---------- Status recognition (spine + wash per reply status) ---------- */
+.guest-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  transform-origin: center;
+  background: var(--pending);
+}
+
+.guest--accepted {
+  background: linear-gradient(90deg, rgba(143, 174, 134, 0.16), rgba(255, 255, 255, 0.72) 42%);
+}
+.guest--accepted .guest-spine { background: var(--accepted); }
+
+.guest--maybe {
+  background: linear-gradient(90deg, rgba(208, 162, 78, 0.16), rgba(255, 255, 255, 0.72) 42%);
+}
+.guest--maybe .guest-spine { background: var(--maybe); }
+
+.guest--declined {
+  background: linear-gradient(90deg, rgba(185, 141, 141, 0.16), rgba(255, 255, 255, 0.72) 42%);
+}
+.guest--declined .guest-spine { background: var(--declined); }
+.guest--declined .guest-name { color: var(--ink-soft); }
+
+.guest--pending .guest-spine { background: var(--pending); }
+
+/* Name + status controls; the delete button is a separate card column. */
+.guest-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.guest-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/* ---------- Checkbox ---------- */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.check .box {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--blush-deep);
+  background: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.check .box svg {
+  width: 18px;
+  height: 18px;
+  color: var(--white);
+}
+
+.check--sent.is-on .box {
+  background: var(--sent);
+  border-color: var(--sent);
+}
+
+.check--accepted.is-on .box {
+  background: var(--accepted);
+  border-color: var(--accepted);
+}
+
+.check.is-on .check-label {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- Status selector ---------- */
+.status-select {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid rgba(236, 217, 208, 0.9);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.status-btn {
+  min-width: 2.6rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(236, 217, 208, 0.7);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.status-btn:first-child {
+  border-left: none;
+}
+
+.status-btn.on {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.status-btn--accepted.on { background: var(--accepted); }
+.status-btn--maybe.on { background: var(--maybe); }
+.status-btn--declined.on { background: var(--declined); }
+
+@media (hover: hover) {
+  .status-btn:not(.on):hover {
+    background: rgba(236, 217, 208, 0.4);
+    color: var(--ink);
+  }
+}
+
+/* ---------- Remove ---------- */
+.remove {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  line-height: 1;
+  font-size: 1.4rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  transition: color 0.2s, background 0.2s;
+}
+
+@media (hover: hover) {
+  .remove:hover {
+    color: var(--rose-deep);
+    background: rgba(201, 154, 154, 0.14);
+  }
+}
+
+/* ---------- Misc ---------- */
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  font-style: italic;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  margin-top: 3rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+}
+

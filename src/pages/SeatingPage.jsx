@@ -1,34 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-
-const partySize = (g) => g.party_size || 1
-// Accepted and "maybe" guests both need a seat and count toward capacity.
-const needsSeat = (g) => g.reply_status === 'accepted' || g.reply_status === 'maybe'
-const tableSize = (seats) => 42 + seats * 2.2 // px diameter in the overview
-
-// Short label for a chair: first up-to-2 letters of the party name.
-function initials(name) {
-  const letters = (name || '').replace(/[^\p{L}]/gu, '')
-  return letters.slice(0, 2).toUpperCase() || '·'
-}
-
-// Which guest sits on each seat of a table (a party spans consecutive seats).
-function buildSeatMap(guests, tableId, seats, excludeId = null) {
-  const map = new Array(seats).fill(null)
-  for (const g of guests) {
-    if (g.table_id !== tableId || g.seat_index == null || g.id === excludeId) continue
-    for (let k = 0; k < partySize(g); k++) map[(g.seat_index + k) % seats] = g
-  }
-  return map
-}
-
-function elementAt(x, y, selector) {
-  for (const el of document.elementsFromPoint(x, y)) {
-    const match = el.closest?.(selector)
-    if (match) return match
-  }
-  return null
-}
+import { buildSeatMap, elementAt, needsSeat, partySize, tableSize } from './seating/seatingUtils'
+import SeatMap from './seating/SeatMap'
+import GuestChip from './seating/GuestChip'
+import PartyStepper from './seating/PartyStepper'
+import { PrintCards, PrintChart } from './seating/PrintSheets'
 
 export default function SeatingPage({
   t,
@@ -79,8 +55,8 @@ export default function SeatingPage({
     .filter((g) => needsSeat(g) && g.table_id != null)
     .reduce((s, g) => s + partySize(g), 0)
 
-  // Capacity math counts only guests who need a seat; a guest who has since
-  // declined but is still parked at a table is flagged, not counted (below).
+  // Capacity math counts only guests who need a seat; a guest who has since declined
+  // but is still parked at a table is flagged, not counted (below).
   const occupancyOf = (id) =>
     guests.filter((g) => g.table_id === id && needsSeat(g)).reduce((s, g) => s + partySize(g), 0)
   const guestsAt = (id) => guests.filter((g) => g.table_id === id)
@@ -430,153 +406,5 @@ export default function SeatingPage({
         </div>
       )}
     </div>
-  )
-}
-
-const tableNum = (label) => {
-  const m = String(label).match(/\d+/)
-  return m ? Number(m[0]) : Number.POSITIVE_INFINITY
-}
-const bySeatThenName = (a, b) =>
-  (a.seat_index ?? 99) - (b.seat_index ?? 99) || a.name.localeCompare(b.name)
-
-function PrintChart({ guests, tables }) {
-  const sorted = [...tables].sort((a, b) => tableNum(a.label) - tableNum(b.label))
-  return (
-    <div className="print-chart">
-      <h1 className="print-title">Nozze di Marius e Giorgiana</h1>
-      <div className="pc-grid">
-        {sorted.map((tb) => {
-          const gs = guests.filter((g) => g.table_id === tb.id).sort(bySeatThenName)
-          const occ = gs.reduce((s, g) => s + (g.party_size || 1), 0)
-          return (
-            <div className="pc-table" key={tb.id}>
-              <h2>
-                {tb.label} <span>{occ}/{tb.seats}</span>
-              </h2>
-              <ol>
-                {gs.map((g) => (
-                  <li key={g.id}>
-                    {g.name}
-                    {(g.party_size || 1) > 1 ? ` (${g.party_size})` : ''}
-                  </li>
-                ))}
-              </ol>
-              {gs.length === 0 && <p className="pc-empty">—</p>}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function PrintCards({ guests, tables }) {
-  const labelOf = (id) => tables.find((t) => t.id === id)?.label || ''
-  const seated = guests
-    .filter((g) => g.table_id != null)
-    .sort((a, b) => a.name.localeCompare(b.name))
-  return (
-    <div className="print-cards">
-      {seated.map((g) => (
-        <div className="place-card" key={g.id}>
-          <div className="pcard-name">{g.name}</div>
-          <div className="pcard-table">{labelOf(g.table_id)}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SeatMap({ table, guests, t, selectedGuestId, onSeatClick }) {
-  const seats = table.seats
-  const size = 300
-  const center = size / 2
-  const tableR = size * 0.23
-  const ring = tableR + 34
-  const map = buildSeatMap(guests, table.id, seats)
-
-  return (
-    <div className="seatmap" style={{ width: size, height: size }}>
-      <div
-        className="seatmap-table"
-        style={{ width: tableR * 2, height: tableR * 2 }}
-      >
-        <span>{table.label}</span>
-      </div>
-
-      {Array.from({ length: seats }).map((_, i) => {
-        const ang = ((-90 + (i * 360) / seats) * Math.PI) / 180
-        const cx = center + ring * Math.cos(ang)
-        const cy = center + ring * Math.sin(ang)
-        const g = map[i]
-        const isStart = g && g.seat_index === i
-        return (
-          <button
-            key={i}
-            data-seat-index={i}
-            data-table-id={table.id}
-            className={`seat ${g ? 'occ' : ''} ${isStart ? 'start' : ''} ${
-              !g && selectedGuestId != null ? 'target' : ''
-            }`}
-            style={{ left: cx, top: cy }}
-            title={g ? g.name : `${t.seatWord} ${i + 1}`}
-            onClick={() => onSeatClick(i, g)}
-          >
-            {g ? (isStart ? initials(g.name) : '•') : i + 1}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-function GuestChip({ guest, t, selected, onSelect, onDropAt, updateGuest }) {
-  const ref = useRef(null)
-  return (
-    <motion.div
-      ref={ref}
-      layout
-      className={`chip draggable ${guest.reply_status === 'maybe' ? 'maybe' : ''} ${
-        selected ? 'selected' : ''
-      }`}
-      drag
-      dragSnapToOrigin
-      whileDrag={{ scale: 1.06, zIndex: 30 }}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      onDragEnd={() => {
-        const r = ref.current?.getBoundingClientRect()
-        if (r) onDropAt(r.left + r.width / 2, r.top + r.height / 2)
-      }}
-      onClick={onSelect}
-    >
-      <span className="chip-name">
-        {guest.name}
-        {guest.reply_status === 'maybe' && <em className="tag tag--maybe"> · {t.maybeTag}</em>}
-      </span>
-      <PartyStepper guest={guest} updateGuest={updateGuest} />
-    </motion.div>
-  )
-}
-
-function PartyStepper({ guest, updateGuest }) {
-  const n = guest.party_size || 1
-  const set = (v) => updateGuest(guest.id, { party_size: Math.max(1, v) })
-  return (
-    <span
-      className="party"
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <button className="party-btn" onClick={() => set(n - 1)} disabled={n <= 1} aria-label="-">
-        −
-      </button>
-      <span className="party-n">{n}</span>
-      <button className="party-btn" onClick={() => set(n + 1)} aria-label="+">
-        +
-      </button>
-    </span>
   )
 }

@@ -213,7 +213,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                     t={t}
                     status={guest.reply_status}
                     onChange={(reply_status) => {
-                      // A real reply implies the invite went out — mark it sent if
+                      // A real reply implies the invite went out - mark it sent if
                       // it wasn't already. Clearing back to pending leaves sent alone.
                       const fields = { reply_status }
                       if (reply_status !== 'pending' && !guest.sent) fields.sent = true
@@ -268,8 +268,8 @@ function Stat({ label, value, accent, hint }) {
   )
 }
 
-// Three-way reply status control. No button active means the guest is still
-// 'pending'; clicking the active status returns them to pending.
+// Three-way reply status control. No button active means the guest is still 'pending';
+// clicking the active status returns them to pending.
 function StatusSelect({ t, status, onChange }) {
   const opts = [
     { key: 'accepted', short: t.btnYes, title: t.statusAccepted },

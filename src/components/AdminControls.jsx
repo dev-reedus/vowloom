@@ -11,10 +11,7 @@ export function AdminTextInput({ className = '', ...props }) {
   return <input className={`admin-input ${className}`.trim()} {...props} />
 }
 
-// Custom listbox dropdown. Avoids the native <select> popup, which on mobile
-// gets rendered by the OS detached from the trigger, and lets us match the
-// app's pill/blush styling. Uses the aria-activedescendant listbox pattern:
-// focus stays on the trigger button while arrow keys move the active option.
+// Custom listbox dropdown
 export function AdminSelect({
   value,
   onChange,

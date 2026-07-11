@@ -1,0 +1,159 @@
+/* Search box, print buttons, print sheets, list filters */
+/* ---------- Search box (guest list) ---------- */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0 1.1rem;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(194, 168, 120, 0.4);
+  border-radius: 999px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(194, 168, 120, 0.18);
+}
+
+.search-box .search-ico {
+  width: 18px;
+  height: 18px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 0.7rem 0;
+  font-size: 1.05rem;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.search-box input::placeholder { color: var(--ink-soft); }
+
+/* ---------- Print buttons ---------- */
+.print-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.print-actions button {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: var(--gold-deep);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(194, 168, 120, 0.5);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+@media (hover: hover) {
+  .print-actions button:hover { background: rgba(255, 255, 255, 0.95); }
+}
+
+/* ---------- Print sheets ---------- */
+.print-area { display: none; }
+
+.print-title {
+  font-family: 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: 34pt;
+  text-align: center;
+  color: #b07d7d;
+  margin: 0 0 8mm;
+}
+
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6mm 10mm;
+}
+
+.pc-table {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  border: 1px solid #d8c4b8;
+  border-radius: 6px;
+  padding: 4mm 5mm;
+}
+
+.pc-table h2 {
+  margin: 0 0 2mm;
+  font-size: 13pt;
+  color: #5a4a45;
+  border-bottom: 1px solid #ecd9d0;
+  padding-bottom: 1.5mm;
+}
+.pc-table h2 span { float: right; color: #a68a56; font-size: 11pt; }
+.pc-table ol { margin: 0; padding-left: 6mm; }
+.pc-table li { font-size: 11pt; line-height: 1.5; }
+.pc-empty { color: #999; margin: 0; }
+
+.print-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8mm;
+}
+
+.place-card {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  height: 48mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid #d8c4b8;
+  border-radius: 8px;
+}
+.pcard-name { font-size: 17pt; color: #5a4a45; font-family: 'Cormorant Garamond', serif; }
+.pcard-table { margin-top: 4mm; font-size: 12pt; letter-spacing: 0.08em; color: #b07d7d; }
+
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+  }
+}
+
+/* ---------- List filters ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.filters button {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(194, 168, 120, 0.4);
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.filters button.on {
+  color: var(--white);
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(176, 125, 125, 0.28);
+}
