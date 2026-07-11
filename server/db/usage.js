@@ -1,18 +1,22 @@
 import { db } from './connection.js'
 import { nowSql } from './helpers.js'
+import { tokenLookup } from './tokenCrypto.js'
 
 // ---- download-URL events (used for usage counters and budget) ----
+// Events are keyed by the token's lookup hash (same as access_tokens.token), so
+// callers pass the raw token and we translate it here.
 
 export function recordOriginalDownloadUrl({ token, photo_id, ip_hash = null, user_agent = '' }) {
+  const lookup = tokenLookup(token)
   db.prepare(
     `INSERT INTO gallery_download_events (token, photo_id, ip_hash, user_agent)
      VALUES (?, ?, ?, ?)`,
-  ).run(token, photo_id, ip_hash, String(user_agent || '').slice(0, 300))
+  ).run(lookup, photo_id, ip_hash, String(user_agent || '').slice(0, 300))
   db.prepare(
     `UPDATE access_tokens
      SET download_url_count = download_url_count + 1, last_download_at = ?
      WHERE token = ?`,
-  ).run(nowSql(), token)
+  ).run(nowSql(), lookup)
 }
 
 export function countRecentOriginalDownloadUrls(token, sinceIso) {
@@ -22,7 +26,7 @@ export function countRecentOriginalDownloadUrls(token, sinceIso) {
        FROM gallery_download_events
        WHERE token = ? AND created_at >= ?`,
     )
-    .get(token, sinceIso).count
+    .get(tokenLookup(token), sinceIso).count
 }
 
 // ---- gallery settings + budget ----

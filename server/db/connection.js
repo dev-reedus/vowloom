@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
+import { encryptToken, tokenLookup, tokenPreview } from './tokenCrypto.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -132,6 +133,35 @@ function migrate() {
   }
   if (!columnExists('access_tokens', 'default_lang')) {
     db.exec("ALTER TABLE access_tokens ADD COLUMN default_lang TEXT NOT NULL DEFAULT 'it'")
+  }
+  // Token-at-rest protection: store an encrypted copy + a keyed lookup hash
+  // instead of the raw token. Legacy rows (token_enc IS NULL) still hold the raw
+  // token as their key - encrypt them, replace the key with the lookup hash, and
+  // re-point their download events so counters keep matching.
+  if (!columnExists('access_tokens', 'token_enc')) {
+    db.exec('ALTER TABLE access_tokens ADD COLUMN token_enc TEXT')
+  }
+  if (!columnExists('access_tokens', 'token_preview')) {
+    db.exec('ALTER TABLE access_tokens ADD COLUMN token_preview TEXT')
+  }
+  const legacyTokens = db.prepare('SELECT token FROM access_tokens WHERE token_enc IS NULL').all()
+  if (legacyTokens.length) {
+    const updEvents = db.prepare('UPDATE gallery_download_events SET token = ? WHERE token = ?')
+    const updToken = db.prepare(
+      'UPDATE access_tokens SET token = ?, token_enc = ?, token_preview = ? WHERE token = ?',
+    )
+    db.transaction(() => {
+      for (const { token: raw } of legacyTokens) {
+        const lookup = tokenLookup(raw)
+        updEvents.run(lookup, raw)
+        updToken.run(lookup, encryptToken(raw), tokenPreview(raw), raw)
+      }
+    })()
+    // Scrub the old plaintext tokens from freed pages / WAL by rewriting the
+    // file. One-time cost, only when a migration actually happened.
+    db.pragma('wal_checkpoint(TRUNCATE)')
+    db.exec('VACUUM')
+    db.pragma('wal_checkpoint(TRUNCATE)')
   }
 }
 migrate()

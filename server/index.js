@@ -3,6 +3,7 @@ import express from 'express'
 import { seedIfEmpty, seedTablesIfEmpty } from './db.js'
 import { assertAuthConfig, DIST_DIR, PORT } from './config.js'
 import { basicAuth } from './middleware/auth.js'
+import { securityHeaders } from './middleware/securityHeaders.js'
 import { guestsRouter } from './routes/guests.js'
 import { tablesRouter } from './routes/tables.js'
 import { galleryRouter } from './routes/gallery.js'
@@ -13,6 +14,7 @@ import { galleryAdminRouter } from './routes/galleryAdmin.js'
 assertAuthConfig()
 
 const app = express()
+app.use(securityHeaders)
 app.use(express.json())
 
 // Health probe - always open, so the container healthcheck works with auth on.

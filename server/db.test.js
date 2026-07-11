@@ -12,6 +12,8 @@ const DB_PATH = path.join(TMP, 'test.db')
 process.env.DB_PATH = DB_PATH
 process.env.SEED_FILE = path.join(TMP, 'no-such-seed.txt')
 
+const LEGACY_RAW_TOKEN = 'legacy-raw-token-test'
+
 // Pre-create a pre-migration database (base columns only, one accepted guest)
 // so importing the module exercises the migration + backfill path.
 {
@@ -26,10 +28,29 @@ process.env.SEED_FILE = path.join(TMP, 'no-such-seed.txt')
     );
   `)
   raw.prepare('INSERT INTO guests (name, accepted) VALUES (?, 1)').run('Legacy Accepted')
+
+  // A pre-encryption access token (raw value as the primary key) plus a download
+  // event, so importing the module exercises the token-encryption migration.
+  raw.exec(`
+    CREATE TABLE access_tokens (
+      token TEXT PRIMARY KEY, label TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'gallery',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), expires_at TEXT,
+      revoked INTEGER NOT NULL DEFAULT 0, note TEXT, open_count INTEGER NOT NULL DEFAULT 0,
+      download_url_count INTEGER NOT NULL DEFAULT 0, last_seen_at TEXT, last_download_at TEXT,
+      deleted_at TEXT, default_lang TEXT NOT NULL DEFAULT 'it'
+    );
+    CREATE TABLE gallery_download_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT NOT NULL, photo_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), ip_hash TEXT, user_agent TEXT
+    );
+  `)
+  raw.prepare('INSERT INTO access_tokens (token, label, download_url_count) VALUES (?, ?, 1)').run(LEGACY_RAW_TOKEN, 'Legacy Link')
+  raw.prepare('INSERT INTO gallery_download_events (token, photo_id) VALUES (?, 1)').run(LEGACY_RAW_TOKEN)
   raw.close()
 }
 
 const {
+  db,
   addGuest,
   backupDatabase,
   createAccessToken,
@@ -119,6 +140,31 @@ test('gallery tokens validate until they are revoked', () => {
 
   revokeAccessToken(token.token)
   assert.equal(validateGalleryToken(token.token), null)
+})
+
+test('access tokens are encrypted at rest, not stored in plaintext', () => {
+  const token = createAccessToken({ label: 'At Rest' })
+  const row = db.prepare('SELECT token, token_enc, token_preview FROM access_tokens WHERE token_preview = ?')
+    .get(token.token_preview)
+  // The stored key is a 64-hex lookup hash, never the raw token; the reversible
+  // copy lives in token_enc.
+  assert.notEqual(row.token, token.token)
+  assert.equal(row.token.length, 64)
+  assert.ok(row.token_enc)
+  // And the admin path can still recover the raw token to rebuild the link.
+  const listed = listAccessTokens({ includeFullToken: true }).find((t) => t.token_preview === token.token_preview)
+  assert.equal(listed.token, token.token)
+})
+
+test('a legacy plaintext token is migrated to encrypted form and still works', () => {
+  // Seeded as raw in the pre-import block; must validate after migration.
+  const valid = validateGalleryToken(LEGACY_RAW_TOKEN)
+  assert.equal(valid.label, 'Legacy Link')
+  // Its download event was re-pointed, so the counter is preserved.
+  assert.equal(valid.download_url_count, 1)
+  // The raw value is no longer the stored key.
+  const rawStillStored = db.prepare('SELECT 1 FROM access_tokens WHERE token = ?').get(LEGACY_RAW_TOKEN)
+  assert.equal(rawStillStored, undefined)
 })
 
 test('soft-deleted gallery tokens are hidden and invalid', () => {

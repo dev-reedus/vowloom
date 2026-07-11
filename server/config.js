@@ -29,10 +29,10 @@ const DEFAULT_ADMIN_KEY = 'admin'
 // at startup, before binding the port.
 export function assertAuthConfig() {
   const problems = []
-  if (!AUTH_PASSWORD) problems.push('AUTH_PASSWORD is empty — HTTP Basic Auth would be disabled')
+  if (!AUTH_PASSWORD) problems.push('AUTH_PASSWORD is empty - HTTP Basic Auth would be disabled')
   const rawAdminKey = String(process.env.ADMIN_KEY || '').trim()
   if (!rawAdminKey || rawAdminKey === DEFAULT_ADMIN_KEY) {
-    problems.push(`ADMIN_KEY is unset or the default '${DEFAULT_ADMIN_KEY}' — guessable`)
+    problems.push(`ADMIN_KEY is unset or the default '${DEFAULT_ADMIN_KEY}' - guessable`)
   }
   if (problems.length === 0) return
 
