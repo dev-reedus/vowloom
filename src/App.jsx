@@ -37,7 +37,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (publicConfig) document.title = `${publicConfig.couple_names} · Wedding Guest List`
+    if (publicConfig) document.title = `${publicConfig.couple_names} · Vowloom`
   }, [publicConfig])
 
   if (!publicConfig) return null

@@ -87,7 +87,7 @@ test('session activity is written at most once per touch interval', () => {
 
 test('malformed percent-encoding in a session cookie is treated as unauthenticated', async () => {
   const { readSessionCookie } = await import('./middleware/session.js')
-  assert.equal(readSessionCookie({ headers: { cookie: 'nozze_session=%' } }), null)
+  assert.equal(readSessionCookie({ headers: { cookie: 'vowloom_session=%' } }), null)
 })
 
 test('sliding-window lapse invalidates and removes the session', () => {

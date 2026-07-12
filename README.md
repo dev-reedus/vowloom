@@ -1,4 +1,4 @@
-# Nozze · Wedding Guest List 💍
+# Vowloom 💍
 
 A React and Express application for managing wedding invitations, replies,
 party sizes, seating, private guest gallery links, and gallery photos. Data is
@@ -130,18 +130,18 @@ public for the container health check.
 To build and run manually:
 
 ```bash
-docker build -t utils-nozze .
+docker build -t vowloom .
 docker run -d \
-  --name utils-nozze \
+  --name vowloom \
   --restart unless-stopped \
   -p 8091:80 \
-  -v utils-nozze-data:/app/data \
+  -v vowloom-data:/app/data \
   -e WEDDING_COUPLE_NAMES='Alex & Sam' \
   -e WEDDING_YEAR='2030' \
   -e COUPLE_PASSWORD='couple-password' \
   -e ADMIN_PASSWORD='admin-password' \
   -e TOKEN_SECRET='long-random-secret' \
-  utils-nozze
+  vowloom
 ```
 
 ## Backup and restore
@@ -153,9 +153,9 @@ Restore a snapshot by replacing the database in the running container and
 removing stale WAL files before restarting:
 
 ```bash
-docker cp nozze-backup-YYYY-MM-DD.db utils-nozze:/app/data/nozze.db
-docker exec utils-nozze sh -c 'rm -f /app/data/nozze.db-wal /app/data/nozze.db-shm'
-docker restart utils-nozze
+docker cp vowloom-backup-YYYY-MM-DD.db vowloom:/app/data/vowloom.db
+docker exec vowloom sh -c 'rm -f /app/data/vowloom.db-wal /app/data/vowloom.db-shm'
+docker restart vowloom
 ```
 
 The Docker volume survives container replacement, but it is not a substitute

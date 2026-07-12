@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // DB lives in a directory that is mounted as a Docker volume, so the data
 // survives container stop/rm. Override with DB_PATH if needed.
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'nozze.db')
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'vowloom.db')
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true })
 

@@ -84,6 +84,7 @@ export function sessionAuthVersion(role) {
   if (!password) return null
   return crypto
     .createHmac('sha256', String(SESSION_SECRET))
+    // Keep the legacy namespace so the product rename does not revoke sessions.
     .update(`nozze-session-v1\0${role}\0${password}`)
     .digest('hex')
 }

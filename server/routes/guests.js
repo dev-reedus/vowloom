@@ -48,6 +48,6 @@ guestsRouter.delete('/api/guests/:id', requireSession, (req, res) => {
 guestsRouter.get('/api/backup', requireSession, requireRole('admin'), (_req, res) => {
   const stamp = new Date().toISOString().slice(0, 10)
   res.setHeader('Content-Type', 'application/octet-stream')
-  res.setHeader('Content-Disposition', `attachment; filename="nozze-backup-${stamp}.db"`)
+  res.setHeader('Content-Disposition', `attachment; filename="vowloom-backup-${stamp}.db"`)
   res.send(backupDatabase())
 })

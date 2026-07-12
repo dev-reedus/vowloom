@@ -3,7 +3,8 @@ import { ALLOW_INSECURE_AUTH } from '../config.js'
 import { getValidSession } from '../db/sessions.js'
 import { createFailureLimiter } from './rateLimit.js'
 
-export const COOKIE_NAME = 'nozze_session'
+export const COOKIE_NAME = 'vowloom_session'
+export const LEGACY_COOKIE_NAME = 'nozze_session'
 const SLIDING_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
 
 // Per-IP failure limiter for the login endpoint. Single-process, resets on restart.
@@ -19,15 +20,20 @@ export function safeEqual(a, b) {
 
 export function readSessionCookie(req) {
   const header = req.headers.cookie || ''
-  for (const part of header.split(';')) {
-    const eq = part.indexOf('=')
-    if (eq === -1) continue
-    const key = part.slice(0, eq).trim()
-    if (key === COOKIE_NAME) {
-      try {
-        return decodeURIComponent(part.slice(eq + 1).trim())
-      } catch {
-        return null
+  const parts = header.split(';')
+  // Prefer the new cookie when both exist. A valid legacy cookie is upgraded
+  // by requireSession reissuing the same session under COOKIE_NAME.
+  for (const cookieName of [COOKIE_NAME, LEGACY_COOKIE_NAME]) {
+    for (const part of parts) {
+      const eq = part.indexOf('=')
+      if (eq === -1) continue
+      const key = part.slice(0, eq).trim()
+      if (key === cookieName) {
+        try {
+          return decodeURIComponent(part.slice(eq + 1).trim())
+        } catch {
+          return null
+        }
       }
     }
   }
@@ -51,6 +57,7 @@ export function setSessionCookie(res, rawId) {
 
 export function clearSessionCookie(res) {
   res.clearCookie(COOKIE_NAME, cookieOptions())
+  res.clearCookie(LEGACY_COOKIE_NAME, cookieOptions())
 }
 
 // Any valid session (couple or admin). Slides last_seen_at and re-issues the

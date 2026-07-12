@@ -7,7 +7,7 @@
 #   ./deploy.sh
 #
 # Configure via environment variables (or edit the defaults below):
-#   APP_NAME         container/image name (default: utils-nozze)
+#   APP_NAME         container/image name (default: vowloom)
 #   HOST_PORT        port to expose        (default: 8091)
 #   WEDDING_*        public couple names and year
 #   DEFAULT_LANGUAGE initial UI language: it, en, or ro
@@ -18,7 +18,7 @@
 #   ADMIN_KEY        legacy guest-link key material (kept so old links keep working)
 #   AUTH_PASSWORD    legacy; used as the COUPLE_PASSWORD fallback if unset
 #   R2_*             Cloudflare R2 gallery storage settings
-#   DATA_VOLUME      Docker volume for DB  (default: <APP_NAME>-data)
+#   DATA_VOLUME      Docker volume for DB (default: <APP_NAME>-data)
 #
 # Examples:
 #   COUPLE_PASSWORD='couple-secret' ADMIN_PASSWORD='admin-secret' ./deploy.sh
@@ -45,7 +45,7 @@ if [ -f .env ]; then
   done < .env
 fi
 
-APP_NAME="${APP_NAME:-utils-nozze}"
+APP_NAME="${APP_NAME:-vowloom}"
 HOST_PORT="${HOST_PORT:-8091}"
 WEDDING_COUPLE_NAMES="${WEDDING_COUPLE_NAMES:-The Couple}"
 WEDDING_YEAR="${WEDDING_YEAR:-}"

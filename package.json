@@ -1,8 +1,8 @@
 {
-  "name": "utils-nozze",
+  "name": "vowloom",
   "private": true,
   "version": "1.0.0",
-  "description": "Wedding invitation tracker",
+  "description": "Private wedding planning, seating, and gallery app",
   "type": "module",
   "scripts": {
     "dev": "vite",

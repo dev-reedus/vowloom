@@ -44,7 +44,7 @@ test('login sets a cookie and returns the couple role', async () => {
   const { res, cookie } = await loginCookie('couple-pw-aaa')
   assert.equal(res.status, 200)
   assert.deepEqual(await res.json(), { role: 'couple' })
-  assert.match(cookie, /^nozze_session=/)
+  assert.match(cookie, /^vowloom_session=/)
 })
 
 test('login returns the admin role for the admin password', async () => {
@@ -61,6 +61,14 @@ test('GET /api/me returns the role with a valid cookie, 401 without', async () =
 
   const anon = await fetch(`${base}/api/me`)
   assert.equal(anon.status, 401)
+})
+
+test('a legacy session cookie is accepted and upgraded', async () => {
+  const { cookie } = await loginCookie('couple-pw-aaa')
+  const legacyCookie = cookie.replace(/^vowloom_session=/, 'nozze_session=')
+  const res = await fetch(`${base}/api/me`, { headers: { cookie: legacyCookie } })
+  assert.equal(res.status, 200)
+  assert.match(res.headers.get('set-cookie') || '', /^vowloom_session=/)
 })
 
 test('guest links are listable by couple and manageable only by admin', async () => {
@@ -177,7 +185,7 @@ test('malformed guest and table requests return JSON validation errors', async (
 })
 
 test('a malformed session cookie returns 401 instead of 500', async () => {
-  const res = await fetch(`${base}/api/me`, { headers: { cookie: 'nozze_session=%' } })
+  const res = await fetch(`${base}/api/me`, { headers: { cookie: 'vowloom_session=%' } })
   assert.equal(res.status, 401)
 })
 

@@ -11,3 +11,4 @@ data
 Dockerfile
 .dockerignore
 deploy.sh
+migrate-to-vowloom.sh
