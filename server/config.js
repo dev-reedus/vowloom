@@ -28,7 +28,6 @@ const publicText = (value, fallback, maxLength = 120) =>
 // /api/config so one runtime image can serve different deployments.
 export const WEDDING_COUPLE_NAMES = publicText(process.env.WEDDING_COUPLE_NAMES, 'The Couple')
 export const WEDDING_YEAR = /^\d{4}$/.test(process.env.WEDDING_YEAR || '') ? process.env.WEDDING_YEAR : ''
-export const WEDDING_GALLERY_TITLE = publicText(process.env.WEDDING_GALLERY_TITLE, 'Wedding Gallery')
 export const DEFAULT_LANGUAGE = ['it', 'en', 'ro'].includes(process.env.DEFAULT_LANGUAGE)
   ? process.env.DEFAULT_LANGUAGE
   : 'it'
@@ -37,7 +36,6 @@ export function publicWeddingConfig() {
   return {
     couple_names: WEDDING_COUPLE_NAMES,
     wedding_year: WEDDING_YEAR,
-    gallery_title: WEDDING_GALLERY_TITLE,
     default_language: DEFAULT_LANGUAGE,
   }
 }

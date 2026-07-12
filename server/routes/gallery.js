@@ -8,7 +8,7 @@ import {
   validateGalleryToken,
 } from '../db.js'
 import { isR2Configured, presignR2Url } from '../r2.js'
-import { DAILY_DOWNLOAD_URL_LIMIT, DOWNLOAD_URL_EXPIRES_SECONDS, WEDDING_GALLERY_TITLE } from '../config.js'
+import { DAILY_DOWNLOAD_URL_LIMIT, DOWNLOAD_URL_EXPIRES_SECONDS } from '../config.js'
 import {
   blockIfGalleryBudgetExceeded,
   galleryPagePayload,
@@ -29,7 +29,7 @@ galleryRouter.get('/api/gallery', (req, res) => {
   const page = galleryPagePayload(listGalleryPhotosPage(paginationParams(req)))
 
   res.json({
-    album: { id: 1, title: WEDDING_GALLERY_TITLE },
+    album: { id: 1 },
     guest: { label: access.label, default_lang: access.default_lang },
     ...page,
   })

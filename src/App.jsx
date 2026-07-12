@@ -13,7 +13,6 @@ import './App.css'
 const FALLBACK_PUBLIC_CONFIG = {
   couple_names: 'The Couple',
   wedding_year: '',
-  gallery_title: 'Wedding Gallery',
   default_language: 'it',
 }
 

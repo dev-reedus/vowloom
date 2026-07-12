@@ -47,7 +47,6 @@ Important settings:
 
 - `WEDDING_COUPLE_NAMES` is the public display name used throughout the UI.
 - `WEDDING_YEAR` optionally adds a four-digit year to the footer.
-- `WEDDING_GALLERY_TITLE` sets the album title returned to gallery clients.
 - `DEFAULT_LANGUAGE` sets the initial UI language to `it`, `en`, or `ro`.
 - `COUPLE_PASSWORD` and `ADMIN_PASSWORD` are required, non-empty, and distinct.
 - `AUTH_PASSWORD` is supported only as a legacy fallback for

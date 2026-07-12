@@ -12,7 +12,7 @@ import {
 } from '../db.js'
 import { generateGalleryDerivatives } from '../galleryImages.js'
 import { deleteR2Object, isR2Configured, listR2Objects, presignR2Url } from '../r2.js'
-import { DOWNLOAD_URL_EXPIRES_SECONDS, WEDDING_GALLERY_TITLE } from '../config.js'
+import { DOWNLOAD_URL_EXPIRES_SECONDS } from '../config.js'
 import { requireSession, requireRole } from '../middleware/session.js'
 import {
   blockIfGalleryBudgetExceeded,
@@ -71,7 +71,7 @@ galleryAdminRouter.delete('/api/admin/gallery/photos/:id', session, async (req, 
 galleryAdminRouter.get('/api/admin/gallery/preview', session, (req, res) => {
   const page = galleryPagePayload(listGalleryPhotosPage(paginationParams(req)))
   res.json({
-    album: { id: 1, title: WEDDING_GALLERY_TITLE },
+    album: { id: 1 },
     guest: { label: null, default_lang: 'it', preview: true },
     ...page,
   })

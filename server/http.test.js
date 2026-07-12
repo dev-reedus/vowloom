@@ -13,7 +13,6 @@ process.env.ADMIN_PASSWORD = 'admin-pw-bbb'
 process.env.ALLOW_INSECURE_AUTH = '1' // cookie Secure off, so http keeps it
 process.env.WEDDING_COUPLE_NAMES = 'Test Couple'
 process.env.WEDDING_YEAR = '2030'
-process.env.WEDDING_GALLERY_TITLE = 'Test Gallery'
 process.env.DEFAULT_LANGUAGE = 'en'
 
 const { createApp } = await import('./app.js')
@@ -88,7 +87,7 @@ test('guest links are listable by couple and manageable only by admin', async ()
 
   const gallery = await fetch(`${base}/api/gallery?token=${encodeURIComponent(token)}`)
   assert.equal(gallery.status, 200)
-  assert.equal((await gallery.json()).album.title, 'Test Gallery')
+  assert.deepEqual((await gallery.json()).album, { id: 1 })
 
   const listAfter = await fetch(`${base}/api/admin/gallery/tokens`, { headers: { cookie: couple } })
   assert.equal(listAfter.status, 200)
@@ -124,7 +123,6 @@ test('public routes need no session', async () => {
   assert.deepEqual(await config.json(), {
     couple_names: 'Test Couple',
     wedding_year: '2030',
-    gallery_title: 'Test Gallery',
     default_language: 'en',
   })
 
