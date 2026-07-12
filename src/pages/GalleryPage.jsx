@@ -208,7 +208,7 @@ export default function GalleryPage({
 
       <header className="gallery-head">
         <p className="kicker">{publicConfig.couple_names}</p>
-        <h1>{data?.album?.title || t.galleryDefaultTitle}</h1>
+        <h1 className="script">{data?.album?.title || t.galleryDefaultTitle}</h1>
         <p>
           {preview
             ? t.galleryPreviewLabel
