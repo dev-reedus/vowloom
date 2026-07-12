@@ -37,4 +37,5 @@ export {
   pruneExpiredSessions,
   SESSION_SLIDING_MS,
   SESSION_ABSOLUTE_MS,
+  SESSION_TOUCH_INTERVAL_MS,
 } from './db/sessions.js'

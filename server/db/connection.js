@@ -92,6 +92,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
     id_hash          TEXT PRIMARY KEY,   -- SHA-256 hex of the raw session id
     role             TEXT NOT NULL,      -- 'couple' | 'admin'
+    auth_version     TEXT,               -- binds the session to the current role password
     created_at       TEXT NOT NULL,
     last_seen_at     TEXT NOT NULL,      -- refreshed on each authenticated request
     absolute_expiry  TEXT NOT NULL       -- created_at + 180 days, never extended
@@ -141,6 +142,9 @@ function migrate() {
   }
   if (!columnExists('access_tokens', 'default_lang')) {
     db.exec("ALTER TABLE access_tokens ADD COLUMN default_lang TEXT NOT NULL DEFAULT 'it'")
+  }
+  if (!columnExists('sessions', 'auth_version')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN auth_version TEXT')
   }
   // Token-at-rest protection: store an encrypted copy + a keyed lookup hash
   // instead of the raw token. Legacy rows (token_enc IS NULL) still hold the raw

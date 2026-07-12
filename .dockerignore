@@ -5,6 +5,9 @@ data
 .idea
 *.log
 .DS_Store
+.env
+.env.*
+!.env.example
 Dockerfile
 .dockerignore
 deploy.sh

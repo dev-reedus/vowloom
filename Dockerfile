@@ -25,7 +25,6 @@ ENV NODE_ENV=production PORT=80
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY server ./server
-COPY lista.txt ./lista.txt
 COPY package.json ./package.json
 
 # DB lives here; mount a volume at /app/data to persist across stop/rm

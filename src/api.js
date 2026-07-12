@@ -1,12 +1,21 @@
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
+let unauthorizedHandler = null
 
 async function req(url, options) {
   const res = await fetch(url, options)
+  if (res.status === 401 && url !== '/api/login') unauthorizedHandler?.()
   if (!res.ok) throw new Error(`${options?.method || 'GET'} ${url} → ${res.status}`)
   return res.status === 204 ? null : res.json()
 }
 
 export const api = {
+  onUnauthorized: (handler) => {
+    unauthorizedHandler = typeof handler === 'function' ? handler : null
+    return () => {
+      if (unauthorizedHandler === handler) unauthorizedHandler = null
+    }
+  },
+
   // auth / session
   me: async () => {
     const res = await fetch('/api/me')

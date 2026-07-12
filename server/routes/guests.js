@@ -1,6 +1,12 @@
 import { Router } from 'express'
 import { addGuest, backupDatabase, deleteGuest, listGuests, updateGuest } from '../db.js'
 import { requireSession, requireRole } from '../middleware/session.js'
+import {
+  entityId,
+  guestCreateBody,
+  guestPatchBody,
+  validationErrorResponse,
+} from '../lib/requestValidation.js'
 
 export const guestsRouter = Router()
 
@@ -10,20 +16,31 @@ export const guestsRouter = Router()
 guestsRouter.get('/api/guests', requireSession, (_req, res) => res.json(listGuests()))
 
 guestsRouter.post('/api/guests', requireSession, (req, res) => {
-  const name = (req.body?.name || '').trim()
-  if (!name) return res.status(400).json({ error: 'name is required' })
-  res.status(201).json(addGuest(name))
+  try {
+    const { name } = guestCreateBody(req.body)
+    res.status(201).json(addGuest(name))
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })
 
 guestsRouter.patch('/api/guests/:id', requireSession, (req, res) => {
-  const guest = updateGuest(Number(req.params.id), req.body ?? {})
-  if (!guest) return res.status(404).json({ error: 'not found' })
-  res.json(guest)
+  try {
+    const guest = updateGuest(entityId(req.params.id), guestPatchBody(req.body))
+    if (!guest) return res.status(404).json({ error: 'not found' })
+    res.json(guest)
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })
 
 guestsRouter.delete('/api/guests/:id', requireSession, (req, res) => {
-  if (!deleteGuest(Number(req.params.id))) return res.status(404).json({ error: 'not found' })
-  res.status(204).end()
+  try {
+    if (!deleteGuest(entityId(req.params.id))) return res.status(404).json({ error: 'not found' })
+    res.status(204).end()
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })
 
 // Database backup is admin-only (tightened from Basic-Auth-only + UI-hidden).

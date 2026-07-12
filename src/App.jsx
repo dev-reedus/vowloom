@@ -40,6 +40,15 @@ function AuthGate() {
     }
   }, [])
 
+  useEffect(
+    () =>
+      api.onUnauthorized(() => {
+        setRole(null)
+        setChecked(true)
+      }),
+    [],
+  )
+
   useEffect(() => {
     localStorage.setItem(LANG_KEY, lang)
     document.documentElement.lang = lang

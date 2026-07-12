@@ -17,6 +17,7 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 // Retired as an auth credential; still read by tokenCrypto.js as legacy
 // token-encryption key material so existing guest links keep validating.
 export const ADMIN_KEY = process.env.ADMIN_KEY || 'admin'
+export const SESSION_SECRET = process.env.SESSION_SECRET || process.env.TOKEN_SECRET || ADMIN_KEY
 
 export const ROLES = ['couple', 'admin']
 
@@ -53,6 +54,19 @@ export function resolveRole(password) {
     if (isMatch) matched = role
   }
   return matched
+}
+
+// Bind persisted sessions to the password that created them. Changing a role's
+// password changes this opaque version and invalidates that role's old sessions.
+// SESSION_SECRET (or TOKEN_SECRET) prevents a leaked DB from turning the version
+// into a cheap offline password verifier.
+export function sessionAuthVersion(role) {
+  const password = roleRegistry()[role]
+  if (!password) return null
+  return crypto
+    .createHmac('sha256', String(SESSION_SECRET))
+    .update(`nozze-session-v1\0${role}\0${password}`)
+    .digest('hex')
 }
 
 const GUESSABLE = new Set(['', 'admin', 'password', 'changeme'])

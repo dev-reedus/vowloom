@@ -1,144 +1,163 @@
 # Nozze · Wedding Guest List 💍
 
-A small, elegant React app to track wedding invitations. For each guest you get:
+A React and Express application for managing wedding invitations, replies,
+party sizes, seating, private guest gallery links, and gallery photos. Data is
+stored in SQLite and gallery objects can be stored in Cloudflare R2.
 
-- their **name**,
-- an **Invitation Sent** checkbox,
-- a **reply status** - *pending · accepted · maybe · declined*,
-- and a form to **add new guests**.
+## Authentication and roles
 
-The guest list shows a **stats dashboard** (counts per status plus a confirmed
-headcount), and the seating plan flags **over-capacity tables** and guests who
-still need a seat (both *accepted* and *maybe* guests count toward capacity).
+The application uses a password login screen and server-side session cookies.
+The password determines the role:
 
-Styled for a wedding (blush + gold, script headings) with soft animations
-via [framer-motion](https://www.framer.com/motion/).
+- `couple` can manage guests, tables, uploads, gallery previews, photo deletion,
+  derivative generation, and view existing guest links.
+- `admin` has the same access plus guest-link management, gallery budget and
+  metadata configuration, R2 import, and database backup.
 
-**Storage:** a small Node/Express backend keeps the guests in a **SQLite**
-database (`data/nozze.db`). In Docker the `data/` directory is a volume, so the
-list survives container `stop` / `rm` / redeploys.
+Session identifiers are random, stored only as SHA-256 hashes in SQLite, sent in
+`HttpOnly` cookies, and expire after 30 days of inactivity or 180 days
+absolutely. Sessions are bound to the current password for their role, so
+rotating a role password invalidates that role's existing sessions after the
+application restarts with the new configuration.
 
-**Seeding:** on first start (empty DB only) the list is pre-populated from
-[`lista.txt`](./lista.txt) - one guest per line, `•` bullets and the
-`Nome / Invito / Conferma` header are ignored. You can also add optional status
-flags: `Name | sent | accepted` (flag truthy for `1`/`x`/`yes`/`si`/`true`).
-Once seeded it is never overwritten, so edits made in the app are safe.
-
-**Localization:** Italian and English, toggled with the button in the top-right
-corner (defaults to Italian; the choice is remembered).
-
-**Password:** HTTP Basic Auth handled by the server. Real server-side
-protection - the API and app are gated until the browser authenticates.
+Production cookies are `Secure`; the production deployment must therefore be
+served over HTTPS. `ALLOW_INSECURE_AUTH=1` relaxes that requirement for local
+HTTP development and must not be used for a public deployment.
 
 ## Architecture
 
+```text
+React (Vite) ──build──▶ dist/ ──▶ Express ──▶ SQLite
+                                      └─────▶ Cloudflare R2 (optional)
 ```
-React (Vite) ──build──▶ dist/  ─┐
-                                ├─▶ Express server ──▶ SQLite (data/nozze.db)
-lista.txt ──seed on 1st run ────┘        │
-                                    Basic Auth + /api + static
+
+The unauthenticated SPA shell and `/healthz` are public. Application APIs require
+a session, while `/api/gallery` is protected by a guest capability token.
+
+## Configuration
+
+Copy the example and fill in the secrets:
+
+```bash
+cp .env.example .env
+chmod 600 .env
 ```
+
+Important settings:
+
+- `COUPLE_PASSWORD` and `ADMIN_PASSWORD` are required, non-empty, and distinct.
+- `AUTH_PASSWORD` is supported only as a legacy fallback for
+  `COUPLE_PASSWORD`.
+- `TOKEN_SECRET` protects guest tokens at rest and should be a long random value.
+- `SESSION_SECRET` optionally provides a separate key for password-bound session
+  versions; it falls back to `TOKEN_SECRET`, then legacy `ADMIN_KEY`.
+- `R2_*` variables configure Cloudflare R2.
+- `HOST_PORT`, `APP_NAME`, and `DATA_VOLUME` configure Docker deployment.
+
+`.env` is ignored by both Git and Docker. It is read by `deploy.sh` on the host
+and its values are passed to the running container; it is not needed while
+building the image.
 
 ## Develop
 
+Install dependencies and build the frontend:
+
 ```bash
 npm install
-npm start           # API + static on http://localhost:80  (serves dist/)
-npm run dev         # Vite dev server on http://localhost:5173 (proxies /api → :80)
+npm run build
 ```
 
-Run both: `npm start` in one terminal, `npm run dev` in another.
-
-> **Note:** `better-sqlite3` compiles a native addon and currently supports
-> Node ≤ 22. On a newer local Node, either use `nvm use 20` or just run
-> everything in Docker (below) - the image pins Node 20.
-
-## Build
+For local HTTP development, set distinct passwords and explicitly enable the
+insecure cookie mode:
 
 ```bash
-npm run build      # outputs static site to dist/
+COUPLE_PASSWORD='local-couple-password' \
+ADMIN_PASSWORD='local-admin-password' \
+TOKEN_SECRET='local-session-and-token-secret' \
+ALLOW_INSECURE_AUTH=1 \
+npm start
 ```
 
-## Run with Docker
+The Express server serves `dist/` on port 80 by default. To use Vite hot reload,
+run `npm run dev` separately; Vite proxies `/api` to port 80.
 
-Multi-stage build → Node server serving the app + SQLite API:
+Run verification with:
 
 ```bash
-docker build -t utils-nozze .
-
-# with a password (recommended) and a named volume for the DB:
-docker run -d -p 8091:80 --name utils-nozze \
-  -v utils-nozze-data:/app/data \
-  -e AUTH_USER=sposi -e AUTH_PASSWORD='our-secret' \
-  utils-nozze
-
-# open http://localhost:8091  → browser asks for user / password
+npm test
+npm run build
 ```
 
-- `-v utils-nozze-data:/app/data` persists the SQLite DB across `stop`/`rm`.
-- `AUTH_PASSWORD` toggles Basic Auth: set it to protect the site, leave it empty
-  to run open (only fine for local testing). `AUTH_USER` defaults to `sposi`.
-- `/healthz` stays open for the container healthcheck.
+`better-sqlite3` is a native dependency. The Docker image uses Node 20; use a
+compatible local Node version when developing outside Docker.
 
-### API
+## Optional guest seed file
 
-`GET /api/guests` · `POST /api/guests {name}` ·
-`PATCH /api/guests/:id {sent?, reply_status?}` · `DELETE /api/guests/:id` ·
-`GET /api/backup` (downloads a `.db` snapshot)
+On first startup only, the server looks for an optional `lista.txt` beside
+`package.json`. If it is absent, startup continues with an empty guest list.
+Because the file may contain personal data, it is ignored by Git and is not
+included in the Docker image.
 
-## Backup & restore
+The format is one guest per line. Optional flags use
+`Name | sent | accepted`, where `1`, `x`, `yes`, `si`, `sì`, or `true` are
+treated as true. Existing database records are never overwritten by seeding.
 
-The Docker volume keeps the database across container `stop`/`rm`/redeploys, but
-**not** across a dead SD card. Keep an off-device copy:
+## Docker deployment
 
-- **Backup:** click **Save backup** in the app footer (or open `/api/backup`).
-  You get a timestamped `nozze-backup-YYYY-MM-DD.db` - the full database (guests
-  *and* tables). Save it somewhere off the Pi (phone, laptop, cloud drive).
-- **Restore:** drop that file back in as the database and restart:
-
-  ```bash
-  docker cp nozze-backup-2026-07-05.db utils-nozze:/app/data/nozze.db
-  # clear any stale write-ahead files so the restored DB is used as-is
-  docker exec utils-nozze sh -c 'rm -f /app/data/nozze.db-wal /app/data/nozze.db-shm'
-  docker restart utils-nozze
-  ```
-
-  (Seeding only runs on an empty DB, so restoring never gets overwritten.)
-
-## Deploy (Raspberry Pi or any machine)
-
-Copy the project onto the target machine (e.g. `git clone`, `scp -r`, or a USB
-stick) and run the script **there**. It just needs Docker; it builds the image
-natively for that machine's architecture and (re)starts the container with a
-persistent data volume.
-
-The tidiest way is an **`.env` file** (so you don't retype the password each
-time):
+The deployment script builds the image, creates or reuses a named SQLite volume,
+and restarts the container:
 
 ```bash
-cp .env.example .env      # then edit .env and set AUTH_PASSWORD
 ./deploy.sh
 ```
 
-Or pass values inline - these override `.env`:
+Inline environment values override non-empty values loaded from `.env`:
 
 ```bash
-HOST_PORT=80 AUTH_USER=george AUTH_PASSWORD='our-secret' ./deploy.sh
+HOST_PORT=80 ./deploy.sh
 ```
 
-Configurable vars (in `.env` or inline): `APP_NAME`, `HOST_PORT`, `AUTH_USER`,
-`AUTH_PASSWORD`, `ADMIN_KEY`, `DATA_VOLUME`, `R2_*`, and `GALLERY_*` settings.
-Defaults include `utils-nozze`, `8091`, `sposi`, an empty password, and
-`<APP_NAME>-data`. `.env` is git-ignored so your password stays out of git. The
-script warns and asks for confirmation if you deploy without a password, and
-prints the LAN URL when it's up. The DB volume survives `stop`/`rm`/redeploys,
-so `lista.txt` seeds only the very first time.
+The app is published as plain HTTP by the container. Put it behind an HTTPS
+reverse proxy for production so secure session cookies work. `/healthz` remains
+public for the container health check.
 
-`ADMIN_KEY` is required for sensitive gallery controls such as creating,
-revoking, or deleting guest links and changing monthly budget configuration. Set
-the same value in browser `localStorage` as `adminKey` when you need those
-controls.
+To build and run manually:
 
-> First run on a Pi has no Docker? Install it with
-> `curl -sSL https://get.docker.com | sh`, then
-> `sudo usermod -aG docker "$USER"` and log out/in.
+```bash
+docker build -t utils-nozze .
+docker run -d \
+  --name utils-nozze \
+  --restart unless-stopped \
+  -p 8091:80 \
+  -v utils-nozze-data:/app/data \
+  -e COUPLE_PASSWORD='couple-password' \
+  -e ADMIN_PASSWORD='admin-password' \
+  -e TOKEN_SECRET='long-random-secret' \
+  utils-nozze
+```
+
+## Backup and restore
+
+Admins can download a consistent SQLite snapshot using the **Save backup** link
+or `GET /api/backup` with an authenticated admin session.
+
+Restore a snapshot by replacing the database in the running container and
+removing stale WAL files before restarting:
+
+```bash
+docker cp nozze-backup-YYYY-MM-DD.db utils-nozze:/app/data/nozze.db
+docker exec utils-nozze sh -c 'rm -f /app/data/nozze.db-wal /app/data/nozze.db-shm'
+docker restart utils-nozze
+```
+
+The Docker volume survives container replacement, but it is not a substitute
+for an off-device backup.
+
+## API summary
+
+- `POST /api/login`, `POST /api/logout`, `GET /api/me`
+- `GET|POST /api/guests`, `PATCH|DELETE /api/guests/:id`
+- `GET|POST /api/tables`, `PATCH|DELETE /api/tables/:id`
+- `GET /api/backup` (admin only)
+- `/api/admin/gallery/*` for authenticated gallery operations
+- `/api/gallery*` for guest-token-protected gallery access

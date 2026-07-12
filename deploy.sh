@@ -12,6 +12,7 @@
 #   COUPLE_PASSWORD  couple login password (REQUIRED; falls back to AUTH_PASSWORD)
 #   ADMIN_PASSWORD   admin login password  (REQUIRED; must differ from couple's)
 #   TOKEN_SECRET     guest-link encryption key (recommended; else derived from ADMIN_KEY)
+#   SESSION_SECRET   session-version key (optional; falls back to TOKEN_SECRET)
 #   ADMIN_KEY        legacy guest-link key material (kept so old links keep working)
 #   AUTH_PASSWORD    legacy; used as the COUPLE_PASSWORD fallback if unset
 #   R2_*             Cloudflare R2 gallery storage settings
@@ -44,11 +45,11 @@ fi
 
 APP_NAME="${APP_NAME:-utils-nozze}"
 HOST_PORT="${HOST_PORT:-8091}"
-AUTH_USER="${AUTH_USER:-sposi}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-}"
 COUPLE_PASSWORD="${COUPLE_PASSWORD:-}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 TOKEN_SECRET="${TOKEN_SECRET:-}"
+SESSION_SECRET="${SESSION_SECRET:-}"
 ALLOW_INSECURE_AUTH="${ALLOW_INSECURE_AUTH:-}"
 ADMIN_KEY="${ADMIN_KEY:-}"
 R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-}"
@@ -110,8 +111,8 @@ docker run -d \
   -e "COUPLE_PASSWORD=${COUPLE_PASSWORD}" \
   -e "ADMIN_PASSWORD=${ADMIN_PASSWORD}" \
   -e "TOKEN_SECRET=${TOKEN_SECRET}" \
+  -e "SESSION_SECRET=${SESSION_SECRET}" \
   -e "ALLOW_INSECURE_AUTH=${ALLOW_INSECURE_AUTH}" \
-  -e "AUTH_USER=${AUTH_USER}" \
   -e "AUTH_PASSWORD=${AUTH_PASSWORD}" \
   -e "ADMIN_KEY=${ADMIN_KEY}" \
   -e "R2_ACCOUNT_ID=${R2_ACCOUNT_ID}" \

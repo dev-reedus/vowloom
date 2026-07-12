@@ -9,7 +9,7 @@ export function securityHeaders(_req, res, next) {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'DENY')
   // Only takes effect over HTTPS; harmless over plain HTTP. Assumes the app is
-  // served behind TLS in production (as the Basic Auth credentials require).
+  // served behind TLS in production (as Secure session cookies require).
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   next()
 }

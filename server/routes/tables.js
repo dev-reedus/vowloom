@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { addTable, deleteTable, listTables, updateTable } from '../db.js'
 import { requireSession } from '../middleware/session.js'
+import { entityId, tableBody, validationErrorResponse } from '../lib/requestValidation.js'
 
 export const tablesRouter = Router()
 
@@ -9,16 +10,28 @@ export const tablesRouter = Router()
 tablesRouter.get('/api/tables', requireSession, (_req, res) => res.json(listTables()))
 
 tablesRouter.post('/api/tables', requireSession, (req, res) => {
-  res.status(201).json(addTable(req.body ?? {}))
+  try {
+    res.status(201).json(addTable(tableBody(req.body)))
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })
 
 tablesRouter.patch('/api/tables/:id', requireSession, (req, res) => {
-  const table = updateTable(Number(req.params.id), req.body ?? {})
-  if (!table) return res.status(404).json({ error: 'not found' })
-  res.json(table)
+  try {
+    const table = updateTable(entityId(req.params.id), tableBody(req.body, { partial: true }))
+    if (!table) return res.status(404).json({ error: 'not found' })
+    res.json(table)
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })
 
 tablesRouter.delete('/api/tables/:id', requireSession, (req, res) => {
-  if (!deleteTable(Number(req.params.id))) return res.status(404).json({ error: 'not found' })
-  res.status(204).end()
+  try {
+    if (!deleteTable(entityId(req.params.id))) return res.status(404).json({ error: 'not found' })
+    res.status(204).end()
+  } catch (err) {
+    if (!validationErrorResponse(res, err)) throw err
+  }
 })

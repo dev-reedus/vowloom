@@ -6,8 +6,7 @@ import { createFailureLimiter } from './rateLimit.js'
 export const COOKIE_NAME = 'nozze_session'
 const SLIDING_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
 
-// Per-IP failure limiter for the login endpoint (reused pattern from the old
-// Basic Auth). Single-process, resets on restart.
+// Per-IP failure limiter for the login endpoint. Single-process, resets on restart.
 export const loginLimiter = createFailureLimiter()
 
 // Constant-time string compare (equal-length hashed buffers, no length/prefix
@@ -24,7 +23,13 @@ export function readSessionCookie(req) {
     const eq = part.indexOf('=')
     if (eq === -1) continue
     const key = part.slice(0, eq).trim()
-    if (key === COOKIE_NAME) return decodeURIComponent(part.slice(eq + 1).trim())
+    if (key === COOKIE_NAME) {
+      try {
+        return decodeURIComponent(part.slice(eq + 1).trim())
+      } catch {
+        return null
+      }
+    }
   }
   return null
 }

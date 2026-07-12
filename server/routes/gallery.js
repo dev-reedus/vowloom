@@ -17,7 +17,7 @@ import {
   toSqlDate,
 } from '../lib/gallery.js'
 
-// Public gallery API - capability-token protected, no Basic Auth prompt.
+// Public gallery API - capability-token protected, no app session required.
 export const galleryRouter = Router()
 
 galleryRouter.get('/api/gallery', (req, res) => {

@@ -122,6 +122,50 @@ test('public routes need no session', async () => {
   assert.equal(gallery.status, 401)
 })
 
+test('malformed guest and table requests return JSON validation errors', async () => {
+  const { cookie } = await loginCookie('couple-pw-aaa')
+  const jsonHeaders = { cookie, 'Content-Type': 'application/json' }
+
+  const badGuest = await fetch(`${base}/api/guests`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({ name: { nested: true } }),
+  })
+  assert.equal(badGuest.status, 400)
+  assert.match((await badGuest.json()).error, /name must be a string/)
+
+  const invalidStatus = await fetch(`${base}/api/guests/1`, {
+    method: 'PATCH',
+    headers: jsonHeaders,
+    body: JSON.stringify({ reply_status: 'unknown' }),
+  })
+  assert.equal(invalidStatus.status, 400)
+
+  const table = await fetch(`${base}/api/tables`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({ label: 'Validated table', seats: 8, x: 0.5, y: 0.5 }),
+  })
+  assert.equal(table.status, 201)
+  const tableId = (await table.json()).id
+
+  const badCoordinate = await fetch(`${base}/api/tables/${tableId}`, {
+    method: 'PATCH',
+    headers: jsonHeaders,
+    body: JSON.stringify({ x: 'not-a-number' }),
+  })
+  assert.equal(badCoordinate.status, 400)
+  assert.match((await badCoordinate.json()).error, /finite number/)
+
+  const badId = await fetch(`${base}/api/tables/not-an-id`, { method: 'DELETE', headers: { cookie } })
+  assert.equal(badId.status, 400)
+})
+
+test('a malformed session cookie returns 401 instead of 500', async () => {
+  const res = await fetch(`${base}/api/me`, { headers: { cookie: 'nozze_session=%' } })
+  assert.equal(res.status, 401)
+})
+
 test('repeated bad logins trip the rate limiter (429)', async () => {
   let status = 0
   for (let i = 0; i < 12; i++) {
