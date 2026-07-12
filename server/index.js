@@ -1,43 +1,19 @@
-import path from 'node:path'
-import express from 'express'
+import { createApp } from './app.js'
+import { assertAuthConfig, PORT } from './config.js'
 import { seedIfEmpty, seedTablesIfEmpty } from './db.js'
-import { assertAuthConfig, DIST_DIR, PORT } from './config.js'
-import { basicAuth } from './middleware/auth.js'
-import { securityHeaders } from './middleware/securityHeaders.js'
-import { guestsRouter } from './routes/guests.js'
-import { tablesRouter } from './routes/tables.js'
-import { galleryRouter } from './routes/gallery.js'
-import { guestLinksRouter } from './routes/guestLinks.js'
-import { galleryAdminRouter } from './routes/galleryAdmin.js'
+import { pruneExpiredSessions } from './db/sessions.js'
 
-// Fail closed on missing/guessable auth secrets before we bind the port.
+// Fail closed on missing/guessable/ambiguous auth secrets before we bind the port.
 assertAuthConfig()
 
-const app = express()
-app.use(securityHeaders)
-app.use(express.json())
-
-// Health probe - always open, so the container healthcheck works with auth on.
-app.get('/healthz', (_req, res) => res.type('text').send('ok'))
-
-// HTTP Basic Auth (skipped when AUTH_PASSWORD is empty).
-const auth = basicAuth()
-if (auth) app.use(auth)
-
-// API routes.
-app.use(guestsRouter)
-app.use(tablesRouter)
-app.use(galleryRouter)
-app.use(guestLinksRouter)
-app.use(galleryAdminRouter)
-
-// Static frontend + SPA fallback.
-app.use(express.static(DIST_DIR))
-app.get('*', (_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')))
+const app = createApp()
 
 const gseed = seedIfEmpty()
 if (gseed.seeded > 0) console.log(`[server] Seeded ${gseed.seeded} guests from lista.txt.`)
 const tseed = seedTablesIfEmpty()
 if (tseed.seeded > 0) console.log(`[server] Seeded ${tseed.seeded} example tables.`)
+
+const pruned = pruneExpiredSessions()
+if (pruned > 0) console.log(`[server] Pruned ${pruned} expired session(s).`)
 
 app.listen(PORT, () => console.log(`[server] Listening on :${PORT}`))

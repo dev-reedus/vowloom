@@ -14,7 +14,62 @@ function localDateTimeInDays(days) {
   return date.toISOString().slice(0, 16)
 }
 
-export default function GuestLinksAdminPage({ adminKey, t }) {
+export function GuestLinksTable({
+  tokens,
+  t,
+  canManageLinks = false,
+  onCopy,
+  onRevoke,
+  onDelete,
+  showEmpty = true,
+}) {
+  return (
+    <div className="admin-table" role="table" aria-label={t.guestLinksTableLabel}>
+      {tokens.length === 0 ? (
+        showEmpty && <p className="empty">{t.guestLinksEmpty}</p>
+      ) : (
+        tokens.map((token) => (
+          <div className={`admin-row ${token.revoked ? 'is-muted' : ''}`} key={token.token}>
+            <div>
+              <strong>{token.label}</strong>
+              <span>{token.token_preview}</span>
+            </div>
+            <div>
+              <span>
+                {token.revoked
+                  ? t.guestLinksRevoked
+                  : token.expires_at
+                    ? t.guestLinksExpires(token.expires_at)
+                    : t.guestLinksActive}
+              </span>
+              <span>
+                {t.guestLinksUsage(token.open_count, token.download_url_count)}
+              </span>
+              <span>{t.guestLinksDefaultLanguage}: {token.default_lang?.toUpperCase?.() || 'IT'}</span>
+            </div>
+            <div className="admin-actions">
+              <button type="button" onClick={() => onCopy(token.token)} disabled={token.revoked}>
+                {t.guestLinksCopy}
+              </button>
+              {canManageLinks && (
+                <>
+                  <button type="button" onClick={() => onRevoke(token.token)} disabled={token.revoked}>
+                    {t.guestLinksRevoke}
+                  </button>
+                  <button type="button" onClick={() => onDelete(token.token)}>
+                    {t.guestLinksDelete}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
+export default function GuestLinksAdminPage({ isAdmin, t }) {
   const [tokens, setTokens] = useState([])
   const [label, setLabel] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
@@ -22,7 +77,7 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
   const [defaultLang, setDefaultLang] = useState('it')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
-  const canManageLinks = !!adminKey
+  const canManageLinks = isAdmin
 
   const origin = useMemo(() => window.location.origin, [])
   const expirySummary = useMemo(() => {
@@ -33,7 +88,7 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
   }, [expiresAt, t])
 
   async function reload() {
-    setTokens(await api.listGalleryTokens(adminKey))
+    setTokens(await api.listGalleryTokens())
   }
 
   useEffect(() => {
@@ -47,13 +102,13 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
     return () => {
       alive = false
     }
-  }, [adminKey])
+  }, [])
 
   async function createToken(event) {
     event.preventDefault()
     setStatus('')
     try {
-      const token = await api.createGalleryToken(adminKey, {
+      const token = await api.createGalleryToken({
         label,
         expires_at: expiresAt || null,
         note,
@@ -75,7 +130,7 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
   async function revokeToken(token) {
     if (!window.confirm(t.guestLinksRevokeConfirm)) return
     try {
-      const updated = await api.revokeGalleryToken(adminKey, token)
+      const updated = await api.revokeGalleryToken(token)
       setTokens((prev) => prev.map((item) => (item.token === token ? updated : item)))
     } catch (err) {
       console.error('Failed to revoke guest link', err)
@@ -86,7 +141,7 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
   async function deleteToken(token) {
     if (!window.confirm(t.guestLinksDeleteConfirm)) return
     try {
-      await api.deleteGalleryToken(adminKey, token)
+      await api.deleteGalleryToken(token)
       setTokens((prev) => prev.filter((item) => item.token !== token))
       setStatus(t.guestLinksDeleted)
     } catch (err) {
@@ -147,48 +202,14 @@ export default function GuestLinksAdminPage({ adminKey, t }) {
         <p className="admin-readonly-note">{t.guestLinksReadonly}</p>
       )}
 
-      <div className="admin-table" role="table" aria-label={t.guestLinksTableLabel}>
-        {tokens.length === 0 ? (
-          <p className="empty">{t.guestLinksEmpty}</p>
-        ) : (
-          tokens.map((token) => (
-            <div className={`admin-row ${token.revoked ? 'is-muted' : ''}`} key={token.token}>
-              <div>
-                <strong>{token.label}</strong>
-                <span>{token.token_preview}</span>
-              </div>
-              <div>
-                <span>
-                  {token.revoked
-                    ? t.guestLinksRevoked
-                    : token.expires_at
-                      ? t.guestLinksExpires(token.expires_at)
-                      : t.guestLinksActive}
-                </span>
-                <span>
-                  {t.guestLinksUsage(token.open_count, token.download_url_count)}
-                </span>
-                <span>{t.guestLinksDefaultLanguage}: {token.default_lang?.toUpperCase?.() || 'IT'}</span>
-              </div>
-              <div className="admin-actions">
-                <button type="button" onClick={() => copyLink(token.token)} disabled={token.revoked}>
-                  {t.guestLinksCopy}
-                </button>
-                {canManageLinks && (
-                  <>
-                    <button type="button" onClick={() => revokeToken(token.token)} disabled={token.revoked}>
-                      {t.guestLinksRevoke}
-                    </button>
-                    <button type="button" onClick={() => deleteToken(token.token)}>
-                      {t.guestLinksDelete}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <GuestLinksTable
+        tokens={tokens}
+        t={t}
+        canManageLinks={canManageLinks}
+        onCopy={copyLink}
+        onRevoke={revokeToken}
+        onDelete={deleteToken}
+      />
     </section>
   )
 }

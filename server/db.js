@@ -30,3 +30,11 @@ export {
   setGalleryMonthlyBudget,
   getGalleryBudgetStatus,
 } from './db/usage.js'
+export {
+  createSession,
+  getValidSession,
+  deleteSession,
+  pruneExpiredSessions,
+  SESSION_SLIDING_MS,
+  SESSION_ABSOLUTE_MS,
+} from './db/sessions.js'

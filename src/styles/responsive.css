@@ -2,7 +2,22 @@
 /* ---------- Responsive ---------- */
 @media (max-width: 600px) {
   .page {
-    padding: 2rem 1rem 3rem;
+    padding: 1rem 1rem 3rem;
+  }
+
+  .page-actions {
+    justify-content: space-between;
+    min-height: 40px;
+    margin-bottom: 0.8rem;
+  }
+
+  .logout-btn,
+  .page-actions .lang-toggle {
+    height: 40px;
+  }
+
+  .page-actions .lang-toggle {
+    width: 40px;
   }
 
   .lang-toggle {
@@ -105,4 +120,3 @@
     gap: 1.5rem;
   }
 }
-

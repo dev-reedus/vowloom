@@ -13,7 +13,7 @@ import {
 import { generateGalleryDerivatives } from '../galleryImages.js'
 import { deleteR2Object, isR2Configured, listR2Objects, presignR2Url } from '../r2.js'
 import { DOWNLOAD_URL_EXPIRES_SECONDS } from '../config.js'
-import { requireAdminKey } from '../middleware/auth.js'
+import { requireSession, requireRole } from '../middleware/session.js'
 import {
   blockIfGalleryBudgetExceeded,
   galleryBudgetStatus,
@@ -22,26 +22,32 @@ import {
   titleFromR2Key,
 } from '../lib/gallery.js'
 
-// Gallery photo admin API - Basic Auth, with write routes gated by the admin key.
+// Gallery photo admin API - every route needs a session; the plumbing routes
+// (metadata save, budget, import-R2) additionally require the admin role.
+// Per-route guards: this router mounts at '/', so a router-level `.use` would
+// also gate the public SPA shell, /assets, and the guest gallery.
 export const galleryAdminRouter = Router()
 
-galleryAdminRouter.get('/api/admin/gallery/status', (_req, res) => {
+const session = requireSession
+const admin = [requireSession, requireRole('admin')]
+
+galleryAdminRouter.get('/api/admin/gallery/status', session, (_req, res) => {
   res.json({
     r2_configured: isR2Configured(),
     budget: galleryBudgetStatus(),
   })
 })
 
-galleryAdminRouter.post('/api/admin/gallery/settings/budget', requireAdminKey, (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/settings/budget', admin, (req, res) => {
   setGalleryMonthlyBudget(req.body?.monthly_budget_usd)
   res.json(galleryBudgetStatus())
 })
 
-galleryAdminRouter.get('/api/admin/gallery/photos', (_req, res) => {
+galleryAdminRouter.get('/api/admin/gallery/photos', session, (_req, res) => {
   res.json(listGalleryPhotos())
 })
 
-galleryAdminRouter.delete('/api/admin/gallery/photos/:id', async (req, res) => {
+galleryAdminRouter.delete('/api/admin/gallery/photos/:id', session, async (req, res) => {
   const photo = deleteGalleryPhoto(Number(req.params.id))
   if (!photo) return res.status(404).json({ error: 'photo not found' })
 
@@ -62,7 +68,7 @@ galleryAdminRouter.delete('/api/admin/gallery/photos/:id', async (req, res) => {
   res.json({ deleted: photo, cleanup_errors: cleanupErrors })
 })
 
-galleryAdminRouter.get('/api/admin/gallery/preview', (req, res) => {
+galleryAdminRouter.get('/api/admin/gallery/preview', session, (req, res) => {
   const page = galleryPagePayload(listGalleryPhotosPage(paginationParams(req)))
   res.json({
     album: { id: 1, title: 'Wedding' },
@@ -71,7 +77,7 @@ galleryAdminRouter.get('/api/admin/gallery/preview', (req, res) => {
   })
 })
 
-galleryAdminRouter.post('/api/admin/gallery/photos/:id/download-url', (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/photos/:id/download-url', session, (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
   const photo = getGalleryPhoto(Number(req.params.id))
   if (!photo?.original_key) return res.status(404).json({ error: 'photo not found' })
@@ -88,7 +94,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos/:id/download-url', (req, res)
   })
 })
 
-galleryAdminRouter.post('/api/admin/gallery/photos', requireAdminKey, (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/photos', admin, (req, res) => {
   try {
     res.status(201).json(upsertGalleryPhoto(req.body ?? {}))
   } catch (err) {
@@ -96,7 +102,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos', requireAdminKey, (req, res)
   }
 })
 
-galleryAdminRouter.post('/api/admin/gallery/photos/:id/generate-derivatives', async (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/photos/:id/generate-derivatives', session, async (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
   if (blockIfGalleryBudgetExceeded(res)) return
   const photo = getGalleryPhoto(Number(req.params.id))
@@ -111,7 +117,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos/:id/generate-derivatives', as
   }
 })
 
-galleryAdminRouter.post('/api/admin/gallery/upload-url', (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/upload-url', session, (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
   if (blockIfGalleryBudgetExceeded(res)) return
   const filename = String(req.body?.filename || '').trim()
@@ -134,7 +140,7 @@ galleryAdminRouter.post('/api/admin/gallery/upload-url', (req, res) => {
   })
 })
 
-galleryAdminRouter.post('/api/admin/gallery/import-r2', requireAdminKey, async (req, res) => {
+galleryAdminRouter.post('/api/admin/gallery/import-r2', admin, async (req, res) => {
   if (!isR2Configured()) return res.status(503).json({ error: 'R2 is not configured' })
   if (blockIfGalleryBudgetExceeded(res)) return
 

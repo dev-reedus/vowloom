@@ -6,7 +6,7 @@ import { GALLERY_PAGE_SIZE } from './gallery/galleryUtils'
 import GalleryPhotoTile from './gallery/GalleryPhotoTile'
 import useGalleryLightbox from './gallery/useGalleryLightbox'
 
-export default function GalleryPage({ token, adminKey = '', preview = false, lang: forcedLang = '', showLangToggle = true }) {
+export default function GalleryPage({ token, isAdmin = false, preview = false, lang: forcedLang = "", showLangToggle = true }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -17,7 +17,6 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
   const t = translations[lang]
   const photosRef = useRef([])
   const tokenRef = useRef(token)
-  const adminKeyRef = useRef(adminKey)
   const tRef = useRef(t)
   const loadingMoreRef = useRef(false)
   const loadMoreRef = useRef(null)
@@ -28,7 +27,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
     setError('')
     setPageInfo({ has_more: false, next_offset: 0 })
     const params = { limit: GALLERY_PAGE_SIZE, offset: 0 }
-    const request = preview ? api.galleryPreview(adminKey, params) : api.gallery(token, params)
+    const request = preview ? api.galleryPreview(params) : api.gallery(token, params)
     request
       .then((payload) => {
         if (!alive) return
@@ -44,7 +43,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
     return () => {
       alive = false
     }
-  }, [token, adminKey, preview, forcedLang])
+  }, [token, preview, forcedLang])
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -55,10 +54,9 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
   useEffect(() => {
     photosRef.current = photos
     tokenRef.current = token
-    adminKeyRef.current = adminKey
     tRef.current = t
     loadingMoreRef.current = loadingMore
-  }, [photos, token, adminKey, t, loadingMore])
+  }, [photos, token, t, loadingMore])
 
   useGalleryLightbox({
     photosLength: photos.length,
@@ -89,7 +87,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
     setLoadingMore(true)
     try {
       const params = { limit: GALLERY_PAGE_SIZE, offset: pageInfo.next_offset }
-      const payload = preview ? await api.galleryPreview(adminKeyRef.current, params) : await api.gallery(tokenRef.current, params)
+      const payload = preview ? await api.galleryPreview(params) : await api.gallery(tokenRef.current, params)
       setData((current) => ({
         ...(current || payload),
         photos: [...(current?.photos || []), ...(payload?.photos || [])],
@@ -123,7 +121,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
     }
     try {
       const { url } = preview
-        ? await api.adminOriginalDownloadUrl(adminKeyRef.current, photo.id)
+        ? await api.adminOriginalDownloadUrl(photo.id)
         : await api.originalDownloadUrl(photo.id, tokenRef.current)
       window.location.href = url
     } catch (err) {
@@ -146,7 +144,7 @@ export default function GalleryPage({ token, adminKey = '', preview = false, lan
       button.textContent = tRef.current.galleryPreparing
     }
     try {
-      await api.deleteGalleryPhoto(adminKeyRef.current, photo.id)
+      await api.deleteGalleryPhoto(photo.id)
       pswp?.close()
       setData((current) => {
         if (!current) return current

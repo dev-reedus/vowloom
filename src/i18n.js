@@ -54,6 +54,14 @@ export const translations = {
     backup: 'Salva backup',
     backupTitle: 'Scarica una copia del database (invitati e tavoli)',
 
+    // login / logout
+    loginTitle: 'Accesso',
+    loginPassword: 'Password',
+    loginSubmit: 'Entra',
+    loginError: 'Password non valida',
+    loginRateLimited: 'Troppi tentativi. Riprova più tardi.',
+    logout: 'Esci',
+
     // seating page
     seatingTitle: 'Disposizione dei Tavoli',
     seatingSubtitle: 'Trascina gli invitati sui tavoli',
@@ -154,7 +162,7 @@ export const translations = {
     guestLinksDeleted: 'Link ospite eliminato.',
     guestLinksDeleteError: 'Impossibile eliminare il link ospite.',
     guestLinksCopied: 'Link ospite copiato.',
-    guestLinksReadonly: 'Modalità sola lettura. Aggiungi adminKey in localStorage per creare, revocare o eliminare link.',
+    guestLinksReadonly: 'Modalità sola lettura. Solo admin può creare, revocare o eliminare link.',
     guestLinksLabelPlaceholder: 'Nome ospite o coppia',
     guestLinksNotePlaceholder: 'Nota opzionale',
     guestLinksCreate: 'Crea link',
@@ -247,6 +255,14 @@ export const translations = {
     // backup
     backup: 'Save backup',
     backupTitle: 'Download a copy of the database (guests and tables)',
+
+    // login / logout
+    loginTitle: 'Sign in',
+    loginPassword: 'Password',
+    loginSubmit: 'Enter',
+    loginError: 'Invalid password',
+    loginRateLimited: 'Too many attempts. Try again later.',
+    logout: 'Log out',
 
     // seating page
     seatingTitle: 'Seating Plan',
@@ -348,7 +364,7 @@ export const translations = {
     guestLinksDeleted: 'Guest link deleted.',
     guestLinksDeleteError: 'Could not delete guest link.',
     guestLinksCopied: 'Guest link copied.',
-    guestLinksReadonly: 'Read-only mode. Add adminKey in localStorage to create, revoke, or delete links.',
+    guestLinksReadonly: 'Read-only mode. Only admin can create, revoke, or delete links.',
     guestLinksLabelPlaceholder: 'Guest or couple label',
     guestLinksNotePlaceholder: 'Optional note',
     guestLinksCreate: 'Create Link',
@@ -436,6 +452,14 @@ export const translations = {
 
     backup: 'Salvează backup',
     backupTitle: 'Descarcă o copie a bazei de date (invitați și mese)',
+
+    // login / logout
+    loginTitle: 'Autentificare',
+    loginPassword: 'Parolă',
+    loginSubmit: 'Intră',
+    loginError: 'Parolă invalidă',
+    loginRateLimited: 'Prea multe încercări. Încearcă mai târziu.',
+    logout: 'Ieșire',
 
     seatingTitle: 'Planul meselor',
     seatingSubtitle: 'Trage invitații pe mese',
@@ -534,7 +558,7 @@ export const translations = {
     guestLinksDeleted: 'Linkul invitatului a fost șters.',
     guestLinksDeleteError: 'Nu s-a putut șterge linkul invitatului.',
     guestLinksCopied: 'Linkul invitatului a fost copiat.',
-    guestLinksReadonly: 'Mod doar citire. Adaugă adminKey în localStorage pentru a crea, revoca sau șterge linkuri.',
+    guestLinksReadonly: 'Mod doar citire. Doar admin poate crea, revoca sau șterge linkuri.',
     guestLinksLabelPlaceholder: 'Nume invitat sau cuplu',
     guestLinksNotePlaceholder: 'Notă opțională',
     guestLinksCreate: 'Creează link',

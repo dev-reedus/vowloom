@@ -5,7 +5,7 @@ import { createQueueItem, itemOverallProgress, putFileWithProgress } from './upl
 // Owns the multi-file upload queue: adding files, running each through the
 // presign → PUT → generate-derivatives pipeline, and the retry/clear controls.
 // Processed photos are reported via onPhotoProcessed; progress text via onStatus.
-export default function useUploadQueue({ adminKey, t, onPhotoProcessed, onStatus }) {
+export default function useUploadQueue({ t, onPhotoProcessed, onStatus }) {
   const [uploadQueue, setUploadQueue] = useState([])
   const [uploading, setUploading] = useState(false)
 
@@ -54,7 +54,7 @@ export default function useUploadQueue({ adminKey, t, onPhotoProcessed, onStatus
     for (const item of pending) {
       updateQueueItem(item.id, { status: 'preparing', progress: 0, error: '' })
       try {
-        const payload = await api.createGalleryUploadUrl(adminKey, {
+        const payload = await api.createGalleryUploadUrl({
           filename: item.file.name,
           title: item.file.name,
           content_type: item.file.type,
@@ -65,7 +65,7 @@ export default function useUploadQueue({ adminKey, t, onPhotoProcessed, onStatus
           updateQueueItem(item.id, { progress })
         })
         updateQueueItem(item.id, { status: 'processing', progress: 100 })
-        const processed = await api.generateGalleryDerivatives(adminKey, payload.photo.id)
+        const processed = await api.generateGalleryDerivatives(payload.photo.id)
         onPhotoProcessed(processed)
         updateQueueItem(item.id, { status: 'done', progress: 100, photo: processed })
         completed += 1

@@ -32,3 +32,37 @@
   box-shadow: 0 4px 12px rgba(176, 125, 125, 0.3);
 }
 
+@media (max-width: 600px) {
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 0.35rem;
+    margin-bottom: 1.35rem;
+    padding: 0.35rem;
+    border-radius: 18px;
+  }
+
+  .tabs button {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.92rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tabs button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 360px) {
+  .tabs button {
+    font-size: 0.86rem;
+    padding-inline: 0.45rem;
+  }
+}

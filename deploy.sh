@@ -7,17 +7,19 @@
 #   ./deploy.sh
 #
 # Configure via environment variables (or edit the defaults below):
-#   APP_NAME       container/image name  (default: utils-nozze)
-#   HOST_PORT      port to expose         (default: 8091)
-#   AUTH_USER      Basic Auth username    (default: sposi)
-#   AUTH_PASSWORD  Basic Auth password    (REQUIRED for a public address)
-#   ADMIN_KEY      extra key for sensitive gallery admin tools
-#   R2_*           Cloudflare R2 gallery storage settings
-#   DATA_VOLUME    Docker volume for DB   (default: <APP_NAME>-data)
+#   APP_NAME         container/image name (default: utils-nozze)
+#   HOST_PORT        port to expose        (default: 8091)
+#   COUPLE_PASSWORD  couple login password (REQUIRED; falls back to AUTH_PASSWORD)
+#   ADMIN_PASSWORD   admin login password  (REQUIRED; must differ from couple's)
+#   TOKEN_SECRET     guest-link encryption key (recommended; else derived from ADMIN_KEY)
+#   ADMIN_KEY        legacy guest-link key material (kept so old links keep working)
+#   AUTH_PASSWORD    legacy; used as the COUPLE_PASSWORD fallback if unset
+#   R2_*             Cloudflare R2 gallery storage settings
+#   DATA_VOLUME      Docker volume for DB  (default: <APP_NAME>-data)
 #
 # Examples:
-#   AUTH_PASSWORD='our-secret' ./deploy.sh
-#   HOST_PORT=80 AUTH_USER=george AUTH_PASSWORD='our-secret' ./deploy.sh
+#   COUPLE_PASSWORD='couple-secret' ADMIN_PASSWORD='admin-secret' ./deploy.sh
+#   HOST_PORT=80 COUPLE_PASSWORD='couple-secret' ADMIN_PASSWORD='admin-secret' ./deploy.sh
 
 set -euo pipefail
 
@@ -44,6 +46,10 @@ APP_NAME="${APP_NAME:-utils-nozze}"
 HOST_PORT="${HOST_PORT:-8091}"
 AUTH_USER="${AUTH_USER:-sposi}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-}"
+COUPLE_PASSWORD="${COUPLE_PASSWORD:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
+TOKEN_SECRET="${TOKEN_SECRET:-}"
+ALLOW_INSECURE_AUTH="${ALLOW_INSECURE_AUTH:-}"
 ADMIN_KEY="${ADMIN_KEY:-}"
 R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-}"
 R2_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID:-}"
@@ -70,25 +76,25 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# 2. Warn if the site would be left unprotected.
-if [ -z "${AUTH_PASSWORD}" ]; then
-  echo "!! AUTH_PASSWORD is not set - the site would be PUBLIC with no password." >&2
-  echo "   Re-run with e.g.  AUTH_PASSWORD='our-secret' ./deploy.sh" >&2
-  read -r -p "   Continue without a password anyway? [y/N] " reply
-  case "${reply}" in
-    [yY]*) ;;
-    *) echo "   Aborted."; exit 1 ;;
-  esac
-fi
-
-if [ -z "${ADMIN_KEY}" ]; then
-  echo "!! ADMIN_KEY is not set - gallery admin tools will fall back to the dev value 'admin'." >&2
-  echo "   Set a long random ADMIN_KEY in .env before production deploy." >&2
-  read -r -p "   Continue with the dev fallback anyway? [y/N] " reply
-  case "${reply}" in
-    [yY]*) ;;
-    *) echo "   Aborted."; exit 1 ;;
-  esac
+# 2. Fail-closed pre-flight: the app refuses to start unless both login
+#    passwords are set, non-guessable, and distinct (unless ALLOW_INSECURE_AUTH=1).
+#    Catch it here with a clear message instead of a crash-looping container.
+COUPLE_EFFECTIVE="${COUPLE_PASSWORD:-${AUTH_PASSWORD}}"   # couple falls back to AUTH_PASSWORD
+# Match the app's truthiness for ALLOW_INSECURE_AUTH (1|true|yes, case-insensitive).
+if ! printf '%s' "${ALLOW_INSECURE_AUTH}" | grep -qiE '^(1|true|yes)$'; then
+  problems=""
+  [ -z "${COUPLE_EFFECTIVE}" ] && problems="${problems}\n   - COUPLE_PASSWORD (or AUTH_PASSWORD) is empty"
+  [ -z "${ADMIN_PASSWORD}" ] && problems="${problems}\n   - ADMIN_PASSWORD is empty"
+  if [ -n "${COUPLE_EFFECTIVE}" ] && [ "${COUPLE_EFFECTIVE}" = "${ADMIN_PASSWORD}" ]; then
+    problems="${problems}\n   - COUPLE_PASSWORD and ADMIN_PASSWORD must be distinct"
+  fi
+  if [ -n "${problems}" ]; then
+    echo "!! Insecure/incomplete auth config - the container would refuse to start:" >&2
+    printf "%b\n" "${problems}" >&2
+    echo "   Set them in .env, e.g.  COUPLE_PASSWORD='...'  ADMIN_PASSWORD='...'" >&2
+    echo "   (or set ALLOW_INSECURE_AUTH=1 for a local, non-public deploy)." >&2
+    exit 1
+  fi
 fi
 
 echo "==> Building image '${APP_NAME}:latest' (this is native to this machine)…"
@@ -101,6 +107,10 @@ docker run -d \
   --restart unless-stopped \
   -p "${HOST_PORT}:80" \
   -v "${DATA_VOLUME}:/app/data" \
+  -e "COUPLE_PASSWORD=${COUPLE_PASSWORD}" \
+  -e "ADMIN_PASSWORD=${ADMIN_PASSWORD}" \
+  -e "TOKEN_SECRET=${TOKEN_SECRET}" \
+  -e "ALLOW_INSECURE_AUTH=${ALLOW_INSECURE_AUTH}" \
   -e "AUTH_USER=${AUTH_USER}" \
   -e "AUTH_PASSWORD=${AUTH_PASSWORD}" \
   -e "ADMIN_KEY=${ADMIN_KEY}" \

@@ -7,36 +7,35 @@ async function req(url, options) {
 }
 
 export const api = {
+  // auth / session
+  me: async () => {
+    const res = await fetch('/api/me')
+    if (res.status === 401) return null
+    if (!res.ok) throw new Error(`GET /api/me → ${res.status}`)
+    return res.json()
+  },
+  login: (password) =>
+    req('/api/login', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ password }),
+    }),
+  logout: () => req('/api/logout', { method: 'POST' }),
+
   // guests
   list: () => req('/api/guests'),
   add: (name) =>
-    req('/api/guests', {
-      method: 'POST',
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ name }),
-    }),
+    req('/api/guests', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ name }) }),
   update: (id, fields) =>
-    req(`/api/guests/${id}`, {
-      method: 'PATCH',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(fields),
-    }),
+    req(`/api/guests/${id}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(fields) }),
   remove: (id) => req(`/api/guests/${id}`, { method: 'DELETE' }),
 
   // tables
   listTables: () => req('/api/tables'),
   addTable: (fields) =>
-    req('/api/tables', {
-      method: 'POST',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(fields || {}),
-    }),
+    req('/api/tables', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(fields || {}) }),
   updateTable: (id, fields) =>
-    req(`/api/tables/${id}`, {
-      method: 'PATCH',
-      headers: JSON_HEADERS,
-      body: JSON.stringify(fields),
-    }),
+    req(`/api/tables/${id}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(fields) }),
   removeTable: (id) => req(`/api/tables/${id}`, { method: 'DELETE' }),
 
   // public gallery
@@ -48,71 +47,50 @@ export const api = {
       body: JSON.stringify({ token }),
     }),
 
-  // gallery admin
-  listGalleryTokens: (adminKey) => req('/api/admin/gallery/tokens', { headers: adminHeaders(adminKey) }),
-  createGalleryToken: (adminKey, fields) =>
+  // gallery admin (session cookie carries auth; server enforces role)
+  listGalleryTokens: () => req('/api/admin/gallery/tokens'),
+  createGalleryToken: (fields) =>
     req('/api/admin/gallery/tokens', {
       method: 'POST',
-      headers: adminHeaders(adminKey),
+      headers: JSON_HEADERS,
       body: JSON.stringify(fields || {}),
     }),
-  revokeGalleryToken: (adminKey, token) =>
-    req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}/revoke`, {
-      method: 'POST',
-      headers: adminHeaders(adminKey),
-    }),
-  deleteGalleryToken: (adminKey, token) =>
-    req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}`, {
-      method: 'DELETE',
-      headers: adminHeaders(adminKey),
-    }),
-  listGalleryPhotos: (adminKey) => req('/api/admin/gallery/photos', { headers: adminHeaders(adminKey) }),
-  deleteGalleryPhoto: (adminKey, photoId) =>
-    req(`/api/admin/gallery/photos/${photoId}`, {
-      method: 'DELETE',
-      headers: adminHeaders(adminKey),
-    }),
-  galleryPreview: (adminKey, params) =>
-    req(`/api/admin/gallery/preview?${galleryQuery(params || {})}`, { headers: adminHeaders(adminKey) }),
-  adminOriginalDownloadUrl: (adminKey, photoId) =>
-    req(`/api/admin/gallery/photos/${photoId}/download-url`, {
-      method: 'POST',
-      headers: adminHeaders(adminKey),
-    }),
-  galleryAdminStatus: (adminKey) => req('/api/admin/gallery/status', { headers: adminHeaders(adminKey) }),
-  updateGalleryBudget: (adminKey, monthlyBudgetUsd) =>
+  revokeGalleryToken: (token) =>
+    req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}/revoke`, { method: 'POST' }),
+  deleteGalleryToken: (token) =>
+    req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}`, { method: 'DELETE' }),
+  listGalleryPhotos: () => req('/api/admin/gallery/photos'),
+  deleteGalleryPhoto: (photoId) => req(`/api/admin/gallery/photos/${photoId}`, { method: 'DELETE' }),
+  galleryPreview: (params) => req(`/api/admin/gallery/preview?${galleryQuery(params || {})}`),
+  adminOriginalDownloadUrl: (photoId) =>
+    req(`/api/admin/gallery/photos/${photoId}/download-url`, { method: 'POST' }),
+  galleryAdminStatus: () => req('/api/admin/gallery/status'),
+  updateGalleryBudget: (monthlyBudgetUsd) =>
     req('/api/admin/gallery/settings/budget', {
       method: 'POST',
-      headers: adminHeaders(adminKey),
+      headers: JSON_HEADERS,
       body: JSON.stringify({ monthly_budget_usd: monthlyBudgetUsd }),
     }),
-  saveGalleryPhoto: (adminKey, fields) =>
+  saveGalleryPhoto: (fields) =>
     req('/api/admin/gallery/photos', {
       method: 'POST',
-      headers: adminHeaders(adminKey),
+      headers: JSON_HEADERS,
       body: JSON.stringify(fields || {}),
     }),
-  generateGalleryDerivatives: (adminKey, photoId) =>
-    req(`/api/admin/gallery/photos/${photoId}/generate-derivatives`, {
-      method: 'POST',
-      headers: adminHeaders(adminKey),
-    }),
-  createGalleryUploadUrl: (adminKey, fields) =>
+  generateGalleryDerivatives: (photoId) =>
+    req(`/api/admin/gallery/photos/${photoId}/generate-derivatives`, { method: 'POST' }),
+  createGalleryUploadUrl: (fields) =>
     req('/api/admin/gallery/upload-url', {
       method: 'POST',
-      headers: adminHeaders(adminKey),
+      headers: JSON_HEADERS,
       body: JSON.stringify(fields || {}),
     }),
-  importGalleryR2: (adminKey, fields) =>
+  importGalleryR2: (fields) =>
     req('/api/admin/gallery/import-r2', {
       method: 'POST',
-      headers: adminHeaders(adminKey),
+      headers: JSON_HEADERS,
       body: JSON.stringify(fields || {}),
     }),
-}
-
-function adminHeaders(adminKey) {
-  return { ...JSON_HEADERS, 'X-Admin-Key': adminKey || '' }
 }
 
 function galleryQuery(params = {}) {

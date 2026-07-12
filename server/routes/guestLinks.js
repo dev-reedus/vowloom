@@ -5,16 +5,22 @@ import {
   revokeAccessToken,
   softDeleteAccessToken,
 } from '../db.js'
-import { requireAdminKey } from '../middleware/auth.js'
+import { requireSession, requireRole } from '../middleware/session.js'
 
-// Guest-link admin API - Basic Auth (site-wide) plus the local admin key.
+// Guest-link API for the protected app. Listing is available to any signed-in
+// role so the couple can see existing gallery shares; mutations stay admin-only.
+// Per-route guards: this router mounts at '/', so a router-level `.use` would
+// gate public routes.
 export const guestLinksRouter = Router()
 
-guestLinksRouter.get('/api/admin/gallery/tokens', requireAdminKey, (_req, res) => {
+const session = requireSession
+const admin = [requireSession, requireRole('admin')]
+
+guestLinksRouter.get('/api/admin/gallery/tokens', session, (_req, res) => {
   res.json(listAccessTokens({ includeFullToken: true }))
 })
 
-guestLinksRouter.post('/api/admin/gallery/tokens', requireAdminKey, (req, res) => {
+guestLinksRouter.post('/api/admin/gallery/tokens', admin, (req, res) => {
   const label = String(req.body?.label || '').trim()
   if (!label) return res.status(400).json({ error: 'label is required' })
   try {
@@ -31,13 +37,13 @@ guestLinksRouter.post('/api/admin/gallery/tokens', requireAdminKey, (req, res) =
   }
 })
 
-guestLinksRouter.post('/api/admin/gallery/tokens/:token/revoke', requireAdminKey, (req, res) => {
+guestLinksRouter.post('/api/admin/gallery/tokens/:token/revoke', admin, (req, res) => {
   const token = revokeAccessToken(req.params.token)
   if (!token) return res.status(404).json({ error: 'token not found' })
   res.json(token)
 })
 
-guestLinksRouter.delete('/api/admin/gallery/tokens/:token', requireAdminKey, (req, res) => {
+guestLinksRouter.delete('/api/admin/gallery/tokens/:token', admin, (req, res) => {
   const token = softDeleteAccessToken(req.params.token)
   if (!token) return res.status(404).json({ error: 'token not found' })
   res.json(token)

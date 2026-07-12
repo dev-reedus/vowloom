@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,11 +8,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const DIST_DIR = path.join(__dirname, '..', 'dist')
 export const PORT = process.env.PORT || 80
 
-// HTTP Basic Auth for the admin site (skipped entirely when AUTH_PASSWORD is empty)
-// plus the local admin key that gates write endpoints.
-export const AUTH_USER = process.env.AUTH_USER || 'sposi'
+// Role registry: password-only login, the password picks the role.
+// couple falls back to the legacy AUTH_PASSWORD for a smooth migration.
 export const AUTH_PASSWORD = process.env.AUTH_PASSWORD || ''
+export const COUPLE_PASSWORD = process.env.COUPLE_PASSWORD || AUTH_PASSWORD
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
+
+// Retired as an auth credential; still read by tokenCrypto.js as legacy
+// token-encryption key material so existing guest links keep validating.
 export const ADMIN_KEY = process.env.ADMIN_KEY || 'admin'
+
+export const ROLES = ['couple', 'admin']
 
 // Presigned-URL lifetimes and abuse limits for the R2-backed gallery.
 export const DOWNLOAD_URL_EXPIRES_SECONDS = Number(process.env.GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS || 300)
@@ -21,18 +28,47 @@ export const DAILY_DOWNLOAD_URL_LIMIT = Number(process.env.GALLERY_TOKEN_DAILY_D
 // Explicit opt-in to run without real auth secrets (local development only).
 export const ALLOW_INSECURE_AUTH = /^(1|true|yes)$/i.test(process.env.ALLOW_INSECURE_AUTH || '')
 
-const DEFAULT_ADMIN_KEY = 'admin'
+// The current {role -> password} map, read fresh from the module-load values.
+export function roleRegistry() {
+  return { couple: COUPLE_PASSWORD, admin: ADMIN_PASSWORD }
+}
 
-// Fail closed: refuse to start with missing or guessable auth secrets, so a
-// deploy that forgets its env vars never comes up unprotected. Set
+// Constant-time string compare. Hashing first gives equal-length buffers, so the
+// comparison leaks neither the secret's length nor a matching prefix via timing.
+function timingSafeEqualStr(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest()
+  const hb = crypto.createHash('sha256').update(String(b)).digest()
+  return crypto.timingSafeEqual(ha, hb)
+}
+
+// Resolve a submitted password to its role. Evaluates the WHOLE registry with no
+// early-exit, so timing never reveals which role (if any) matched. Empty
+// configured passwords never match.
+export function resolveRole(password) {
+  const registry = roleRegistry()
+  let matched = null
+  for (const role of Object.keys(registry)) {
+    const configured = registry[role]
+    const isMatch = configured !== '' && timingSafeEqualStr(password, configured)
+    if (isMatch) matched = role
+  }
+  return matched
+}
+
+const GUESSABLE = new Set(['', 'admin', 'password', 'changeme'])
+
+// Fail closed: refuse to start unless both role passwords are set, strong, and
+// distinct (a shared password would make login ambiguous). Set
 // ALLOW_INSECURE_AUTH=1 to downgrade this to a warning for local dev. Call once
 // at startup, before binding the port.
 export function assertAuthConfig() {
   const problems = []
-  if (!AUTH_PASSWORD) problems.push('AUTH_PASSWORD is empty - HTTP Basic Auth would be disabled')
-  const rawAdminKey = String(process.env.ADMIN_KEY || '').trim()
-  if (!rawAdminKey || rawAdminKey === DEFAULT_ADMIN_KEY) {
-    problems.push(`ADMIN_KEY is unset or the default '${DEFAULT_ADMIN_KEY}' - guessable`)
+  if (!COUPLE_PASSWORD) problems.push('COUPLE_PASSWORD (or AUTH_PASSWORD fallback) is empty')
+  else if (GUESSABLE.has(COUPLE_PASSWORD)) problems.push('COUPLE_PASSWORD is a guessable default')
+  if (!ADMIN_PASSWORD) problems.push('ADMIN_PASSWORD is empty')
+  else if (GUESSABLE.has(ADMIN_PASSWORD)) problems.push('ADMIN_PASSWORD is a guessable default')
+  if (COUPLE_PASSWORD && ADMIN_PASSWORD && COUPLE_PASSWORD === ADMIN_PASSWORD) {
+    problems.push('COUPLE_PASSWORD and ADMIN_PASSWORD must be distinct')
   }
   if (problems.length === 0) return
 
@@ -43,7 +79,8 @@ export function assertAuthConfig() {
   }
   throw new Error(
     `Refusing to start with an insecure auth configuration:\n${detail}\n` +
-      'Set AUTH_PASSWORD and a strong ADMIN_KEY, or set ALLOW_INSECURE_AUTH=1 for local development.',
+      'Set distinct strong COUPLE_PASSWORD and ADMIN_PASSWORD, or set ALLOW_INSECURE_AUTH=1 for local development.',
   )
 }
+
 export const DEFAULT_MONTHLY_BUDGET_USD = Number(process.env.GALLERY_MONTHLY_BUDGET_USD || 10)

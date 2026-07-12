@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { AdminNumberInput, AdminTextInput, UploadDropzone, formatBytes } from '../components/AdminControls'
+import { GuestLinksTable } from './GuestLinksAdminPage'
 import useUploadQueue from './gallery/useUploadQueue'
 import GalleryUploadQueue from './gallery/GalleryUploadQueue'
 
-export default function GalleryAdminPage({ adminKey, t }) {
+export default function GalleryAdminPage({ isAdmin, t }) {
   const [photos, setPhotos] = useState([])
   const [adminStatus, setAdminStatus] = useState(null)
   const [budgetInput, setBudgetInput] = useState('')
   const [importPrefix, setImportPrefix] = useState('originals/')
   const [photoFields, setPhotoFields] = useState({ title: '', original_key: '', thumb_key: '', display_key: '' })
+  const [guestTokens, setGuestTokens] = useState([])
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -24,15 +26,17 @@ export default function GalleryAdminPage({ adminKey, t }) {
     uploadOriginals,
     clearCompletedUploads,
     retryFailedUploads,
-  } = useUploadQueue({ adminKey, t, onPhotoProcessed: mergePhoto, onStatus: setStatus })
+  } = useUploadQueue({ t, onPhotoProcessed: mergePhoto, onStatus: setStatus })
 
   async function reload() {
-    const [nextPhotos, nextStatus] = await Promise.all([
-      api.listGalleryPhotos(adminKey),
-      api.galleryAdminStatus(adminKey),
+    const [nextPhotos, nextStatus, nextGuestTokens = []] = await Promise.all([
+      api.listGalleryPhotos(),
+      api.galleryAdminStatus(),
+      isAdmin ? Promise.resolve([]) : api.listGalleryTokens(),
     ])
     setPhotos(nextPhotos)
     setAdminStatus(nextStatus)
+    setGuestTokens(nextGuestTokens)
     setBudgetInput(String(nextStatus?.budget?.monthly_budget_usd ?? ''))
   }
 
@@ -47,13 +51,18 @@ export default function GalleryAdminPage({ adminKey, t }) {
     return () => {
       alive = false
     }
-  }, [adminKey])
+  }, [isAdmin])
+
+  function copyGuestLink(token) {
+    navigator.clipboard?.writeText(`${window.location.origin}/g/${token}`)
+    setStatus(t.guestLinksCopied)
+  }
 
   async function savePhoto(event) {
     event.preventDefault()
     setStatus('')
     try {
-      const photo = await api.saveGalleryPhoto(adminKey, photoFields)
+      const photo = await api.saveGalleryPhoto(photoFields)
       setPhotos((prev) => [photo, ...prev.filter((item) => item.id !== photo.id)])
       setPhotoFields({ title: '', original_key: '', thumb_key: '', display_key: '' })
       setStatus(t.galleryAdminSaved)
@@ -67,7 +76,7 @@ export default function GalleryAdminPage({ adminKey, t }) {
     event.preventDefault()
     setStatus('')
     try {
-      const budget = await api.updateGalleryBudget(adminKey, budgetInput)
+      const budget = await api.updateGalleryBudget(budgetInput)
       setAdminStatus((prev) => ({ ...(prev || {}), budget }))
       setBudgetInput(String(budget.monthly_budget_usd))
       setStatus(t.galleryAdminBudgetSaved)
@@ -81,13 +90,13 @@ export default function GalleryAdminPage({ adminKey, t }) {
     event.preventDefault()
     setStatus(t.galleryAdminImporting)
     try {
-      const result = await api.importGalleryR2(adminKey, { prefix: importPrefix })
+      const result = await api.importGalleryR2({ prefix: importPrefix })
       setPhotos((prev) => [
         ...result.imported,
         ...prev.filter((photo) => !result.imported.some((item) => item.id === photo.id)),
       ])
       setStatus(t.galleryAdminImportDone(result.imported_count, result.skipped_count))
-      const nextStatus = await api.galleryAdminStatus(adminKey)
+      const nextStatus = await api.galleryAdminStatus()
       setAdminStatus(nextStatus)
     } catch (err) {
       console.error('Failed to import R2 originals', err)
@@ -98,7 +107,7 @@ export default function GalleryAdminPage({ adminKey, t }) {
   async function generateDerivatives(photo) {
     setStatus(t.galleryAdminDerivativeStatus(photo.title))
     try {
-      const processed = await api.generateGalleryDerivatives(adminKey, photo.id)
+      const processed = await api.generateGalleryDerivatives(photo.id)
       setPhotos((prev) => prev.map((item) => (item.id === processed.id ? processed : item)))
       setStatus(t.galleryAdminDerivativesDone)
     } catch (err) {
@@ -111,8 +120,8 @@ export default function GalleryAdminPage({ adminKey, t }) {
 
   const budget = adminStatus?.budget
   const budgetExceeded = !!budget?.budget_exceeded
-  const canConfigureBudget = !!adminKey
-  const canUseSensitiveGalleryTools = !!adminKey
+  const canConfigureBudget = isAdmin
+  const canUseSensitiveGalleryTools = isAdmin
 
   return (
     <section className="admin-panel">
@@ -183,6 +192,24 @@ export default function GalleryAdminPage({ adminKey, t }) {
         onRetryFailed={retryFailedUploads}
         onClearFinished={clearCompletedUploads}
       />
+
+      {!isAdmin && guestTokens.length > 0 && (
+        <section className="gallery-guest-links">
+          <header className="admin-head admin-head--spaced">
+            <div>
+              <p className="kicker">{t.guestLinksKicker}</p>
+              <h2>{t.guestLinksTitle}</h2>
+            </div>
+          </header>
+          <p className="admin-readonly-note">{t.guestLinksReadonly}</p>
+          <GuestLinksTable
+            tokens={guestTokens}
+            t={t}
+            onCopy={copyGuestLink}
+            showEmpty={false}
+          />
+        </section>
+      )}
 
       {canUseSensitiveGalleryTools && (
         <form className="admin-form" onSubmit={importR2Originals}>

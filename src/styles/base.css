@@ -3,7 +3,145 @@
   position: relative;
   max-width: 720px;
   margin: 0 auto;
-  padding: 3rem 1.25rem 4rem;
+  padding: 1.25rem 1.25rem 4rem;
+}
+
+/* ---------- Login screen (the entrance to the wedding site) ---------- */
+.login-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.login-card {
+  position: relative;
+  width: min(24rem, 100%);
+  padding: 2.9rem 2.25rem 2.5rem;
+  text-align: center;
+  background: rgba(255, 252, 250, 0.66);
+  border: 1px solid rgba(194, 168, 120, 0.4);
+  border-radius: 26px;
+  box-shadow:
+    0 26px 60px rgba(176, 125, 125, 0.2),
+    0 2px 0 rgba(255, 255, 255, 0.7) inset;
+  backdrop-filter: blur(7px);
+}
+
+/* Inner hairline frame, echoing the border printed inside a wedding invitation. */
+.login-card::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(194, 168, 120, 0.28);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.login-card > * {
+  position: relative; /* keep content above the inner frame */
+}
+
+.login-names {
+  font-size: clamp(2.5rem, 11vw, 3.3rem);
+  margin: 0.1rem 0 0;
+}
+
+.login-prompt {
+  margin: 0.2rem 0 1.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.7;
+}
+
+.login-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(194, 168, 120, 0.18);
+}
+
+.login-error {
+  margin: -0.1rem 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: #a8515b;
+}
+
+.login-submit {
+  width: 100%;
+  padding: 0.85rem 1.8rem;
+  font-size: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(176, 125, 125, 0.34);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.login-submit:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(176, 125, 125, 0.4);
+}
+
+.login-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card .heart { animation: none; }
+}
+
+/* ---------- Authenticated app top controls ---------- */
+.page-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin-bottom: 0.9rem;
+}
+
+.logout-btn {
+  height: 44px;
+  padding: 0 0.9rem;
+  color: var(--rose-deep);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(194, 168, 120, 0.45);
+  border-radius: 22px;
+  box-shadow: 0 6px 16px rgba(176, 125, 125, 0.14);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
 }
 
 .page--wide {
@@ -14,7 +152,7 @@
 .lang-toggle {
   position: absolute;
   top: 1.25rem;
-  right: 1.25rem;
+  right: 0.5rem;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -27,6 +165,13 @@
   box-shadow: 0 6px 16px rgba(176, 125, 125, 0.14);
   backdrop-filter: blur(4px);
   z-index: 2;
+}
+
+.page-actions .lang-toggle {
+  position: static;
+  top: auto;
+  right: auto;
+  flex: 0 0 auto;
 }
 
 /* ---------- Hero ---------- */
@@ -212,4 +357,3 @@
   border-radius: 999px;
   box-shadow: 0 6px 18px rgba(176, 125, 125, 0.35);
 }
-

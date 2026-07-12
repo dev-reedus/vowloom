@@ -7,6 +7,7 @@ import GalleryAdminPage from './pages/GalleryAdminPage'
 import GalleryPage from './pages/GalleryPage'
 import GuestLinksAdminPage from './pages/GuestLinksAdminPage'
 import SeatingPage from './pages/SeatingPage'
+import LoginView from './pages/LoginView'
 import './App.css'
 
 function galleryTokenFromPath() {
@@ -17,24 +18,44 @@ function galleryTokenFromPath() {
 export default function App() {
   const galleryToken = galleryTokenFromPath()
   if (galleryToken) return <GalleryPage token={galleryToken} />
-  return <AdminApp />
+  return <AuthGate />
 }
 
-function AdminApp() {
+// Bootstrap the session: GET /api/me decides login screen vs. the app.
+function AuthGate() {
+  const [role, setRole] = useState(null)
+  const [checked, setChecked] = useState(false)
+  const [lang, setLang] = useState(loadLang)
+  const t = translations[lang]
+
+  useEffect(() => {
+    let alive = true
+    api
+      .me()
+      .then((me) => alive && setRole(me?.role || null))
+      .catch(() => alive && setRole(null))
+      .finally(() => alive && setChecked(true))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(LANG_KEY, lang)
+    document.documentElement.lang = lang
+  }, [lang])
+
+  if (!checked) return null // brief bootstrap; avoids flashing the login screen
+  if (!role) return <LoginView t={t} onLogin={setRole} lang={lang} setLang={setLang} />
+  return <AdminApp role={role} lang={lang} setLang={setLang} onLoggedOut={() => setRole(null)} />
+}
+
+function AdminApp({ role, lang, setLang, onLoggedOut }) {
   const [guests, setGuests] = useState([])
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
-  const [lang, setLang] = useState(loadLang)
-  const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'galleryPreview' | 'guestLinksAdmin'
-  // Admin-only tools (e.g. DB backup) are gated behind localStorage mode="admin".
-  const [adminKey] = useState(() => {
-    try {
-      return localStorage.getItem('adminKey') || (localStorage.getItem('mode') === 'admin' ? 'admin' : '')
-    } catch {
-      return ''
-    }
-  })
-  const hasLocalAdminKey = !!adminKey
+  const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'galleryPreview' | 'guestLinks'
+  const isAdmin = role === 'admin'
   const t = translations[lang]
 
   // Load guests + tables on mount.
@@ -53,10 +74,14 @@ function AdminApp() {
     }
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem(LANG_KEY, lang)
-    document.documentElement.lang = lang
-  }, [lang])
+  async function logout() {
+    try {
+      await api.logout()
+    } catch (err) {
+      console.error('Failed to log out', err)
+    }
+    onLoggedOut()
+  }
 
   // ---- guest handlers (optimistic) ----
   async function addGuest(name) {
@@ -130,16 +155,22 @@ function AdminApp() {
 
   return (
     <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''}`}>
-      <motion.button
-        className="lang-toggle"
-        onClick={() => setLang((p) => nextLang(p))}
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.94 }}
-        aria-label="Change language"
-        title="Change language"
-      >
-        {t.langLabel}
-      </motion.button>
+      <div className="page-actions">
+        <button className="logout-btn" onClick={logout} title={t.logout}>
+          {t.logout}
+        </button>
+
+        <motion.button
+          className="lang-toggle"
+          onClick={() => setLang((p) => nextLang(p))}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+          aria-label="Change language"
+          title="Change language"
+        >
+          {t.langLabel}
+        </motion.button>
+      </div>
 
       <nav className="tabs">
         <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>
@@ -154,17 +185,19 @@ function AdminApp() {
         <button className={view === 'galleryPreview' ? 'on' : ''} onClick={() => setView('galleryPreview')}>
           {t.navGalleryPreview}
         </button>
-        <button className={view === 'guestLinksAdmin' ? 'on' : ''} onClick={() => setView('guestLinksAdmin')}>
-          {t.navGuestLinks}
-        </button>
+        {isAdmin && (
+          <button className={view === 'guestLinks' ? 'on' : ''} onClick={() => setView('guestLinks')}>
+            {t.navGuestLinks}
+          </button>
+        )}
       </nav>
 
       {view === 'galleryAdmin' ? (
-        <GalleryAdminPage adminKey={adminKey} t={t} />
+        <GalleryAdminPage isAdmin={isAdmin} t={t} />
       ) : view === 'galleryPreview' ? (
-        <GalleryPage adminKey={adminKey} preview lang={lang} showLangToggle={false} />
-      ) : view === 'guestLinksAdmin' ? (
-        <GuestLinksAdminPage adminKey={adminKey} t={t} />
+        <GalleryPage isAdmin={isAdmin} preview lang={lang} showLangToggle={false} />
+      ) : view === 'guestLinks' && isAdmin ? (
+        <GuestLinksAdminPage isAdmin={isAdmin} t={t} />
       ) : view === 'list' ? (
         <GuestListPage
           t={t}
@@ -188,7 +221,7 @@ function AdminApp() {
       )}
 
       <footer className="foot">
-        {hasLocalAdminKey && (
+        {isAdmin && (
           <a className="backup-btn" href="/api/backup" title={t.backupTitle} download>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path

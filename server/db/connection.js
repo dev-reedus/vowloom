@@ -88,6 +88,14 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    id_hash          TEXT PRIMARY KEY,   -- SHA-256 hex of the raw session id
+    role             TEXT NOT NULL,      -- 'couple' | 'admin'
+    created_at       TEXT NOT NULL,
+    last_seen_at     TEXT NOT NULL,      -- refreshed on each authenticated request
+    absolute_expiry  TEXT NOT NULL       -- created_at + 180 days, never extended
+  );
 `)
 
 // Default headcount for a party: names joined with "/" (a couple) default to 2,
