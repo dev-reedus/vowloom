@@ -1,6 +1,6 @@
 import path from 'node:path'
 import express from 'express'
-import { DIST_DIR } from './config.js'
+import { DIST_DIR, publicWeddingConfig } from './config.js'
 import { securityHeaders } from './middleware/securityHeaders.js'
 import { authRouter } from './routes/auth.js'
 import { guestsRouter } from './routes/guests.js'
@@ -18,6 +18,10 @@ export function createApp() {
 
   // Health probe - always open, so the container healthcheck works.
   app.get('/healthz', (_req, res) => res.type('text').send('ok'))
+
+  // Explicitly allowlisted public display settings used by the login shell and
+  // guest gallery. Never expose process.env wholesale.
+  app.get('/api/config', (_req, res) => res.json(publicWeddingConfig()))
 
   // Auth: /api/login is public (rate-limited); /api/logout and /api/me self-guard.
   app.use(authRouter)

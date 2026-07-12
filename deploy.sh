@@ -9,6 +9,8 @@
 # Configure via environment variables (or edit the defaults below):
 #   APP_NAME         container/image name (default: utils-nozze)
 #   HOST_PORT        port to expose        (default: 8091)
+#   WEDDING_*        public couple names, year, and gallery title
+#   DEFAULT_LANGUAGE initial UI language: it, en, or ro
 #   COUPLE_PASSWORD  couple login password (REQUIRED; falls back to AUTH_PASSWORD)
 #   ADMIN_PASSWORD   admin login password  (REQUIRED; must differ from couple's)
 #   TOKEN_SECRET     guest-link encryption key (recommended; else derived from ADMIN_KEY)
@@ -45,6 +47,11 @@ fi
 
 APP_NAME="${APP_NAME:-utils-nozze}"
 HOST_PORT="${HOST_PORT:-8091}"
+WEDDING_COUPLE_NAMES="${WEDDING_COUPLE_NAMES:-The Couple}"
+WEDDING_YEAR="${WEDDING_YEAR:-}"
+WEDDING_GALLERY_TITLE="${WEDDING_GALLERY_TITLE:-Wedding Gallery}"
+DEFAULT_LANGUAGE="${DEFAULT_LANGUAGE:-it}"
+SEED_EXAMPLE_TABLES="${SEED_EXAMPLE_TABLES:-}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-}"
 COUPLE_PASSWORD="${COUPLE_PASSWORD:-}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
@@ -108,6 +115,11 @@ docker run -d \
   --restart unless-stopped \
   -p "${HOST_PORT}:80" \
   -v "${DATA_VOLUME}:/app/data" \
+  -e "WEDDING_COUPLE_NAMES=${WEDDING_COUPLE_NAMES}" \
+  -e "WEDDING_YEAR=${WEDDING_YEAR}" \
+  -e "WEDDING_GALLERY_TITLE=${WEDDING_GALLERY_TITLE}" \
+  -e "DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE}" \
+  -e "SEED_EXAMPLE_TABLES=${SEED_EXAMPLE_TABLES}" \
   -e "COUPLE_PASSWORD=${COUPLE_PASSWORD}" \
   -e "ADMIN_PASSWORD=${ADMIN_PASSWORD}" \
   -e "TOKEN_SECRET=${TOKEN_SECRET}" \

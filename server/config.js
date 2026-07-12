@@ -21,6 +21,27 @@ export const SESSION_SECRET = process.env.SESSION_SECRET || process.env.TOKEN_SE
 
 export const ROLES = ['couple', 'admin']
 
+const publicText = (value, fallback, maxLength = 120) =>
+  String(value || '').trim().slice(0, maxLength) || fallback
+
+// Public wedding identity. These values are deliberately exposed through
+// /api/config so one runtime image can serve different deployments.
+export const WEDDING_COUPLE_NAMES = publicText(process.env.WEDDING_COUPLE_NAMES, 'The Couple')
+export const WEDDING_YEAR = /^\d{4}$/.test(process.env.WEDDING_YEAR || '') ? process.env.WEDDING_YEAR : ''
+export const WEDDING_GALLERY_TITLE = publicText(process.env.WEDDING_GALLERY_TITLE, 'Wedding Gallery')
+export const DEFAULT_LANGUAGE = ['it', 'en', 'ro'].includes(process.env.DEFAULT_LANGUAGE)
+  ? process.env.DEFAULT_LANGUAGE
+  : 'it'
+
+export function publicWeddingConfig() {
+  return {
+    couple_names: WEDDING_COUPLE_NAMES,
+    wedding_year: WEDDING_YEAR,
+    gallery_title: WEDDING_GALLERY_TITLE,
+    default_language: DEFAULT_LANGUAGE,
+  }
+}
+
 // Presigned-URL lifetimes and abuse limits for the R2-backed gallery.
 export const DOWNLOAD_URL_EXPIRES_SECONDS = Number(process.env.GALLERY_DOWNLOAD_URL_EXPIRES_SECONDS || 300)
 export const DISPLAY_URL_EXPIRES_SECONDS = Number(process.env.GALLERY_DISPLAY_URL_EXPIRES_SECONDS || 3600)

@@ -45,6 +45,10 @@ chmod 600 .env
 
 Important settings:
 
+- `WEDDING_COUPLE_NAMES` is the public display name used throughout the UI.
+- `WEDDING_YEAR` optionally adds a four-digit year to the footer.
+- `WEDDING_GALLERY_TITLE` sets the album title returned to gallery clients.
+- `DEFAULT_LANGUAGE` sets the initial UI language to `it`, `en`, or `ro`.
 - `COUPLE_PASSWORD` and `ADMIN_PASSWORD` are required, non-empty, and distinct.
 - `AUTH_PASSWORD` is supported only as a legacy fallback for
   `COUPLE_PASSWORD`.
@@ -53,6 +57,8 @@ Important settings:
   versions; it falls back to `TOKEN_SECRET`, then legacy `ADMIN_KEY`.
 - `R2_*` variables configure Cloudflare R2.
 - `HOST_PORT`, `APP_NAME`, and `DATA_VOLUME` configure Docker deployment.
+- `SEED_EXAMPLE_TABLES=1` adds six generic demo tables to a new database;
+  production deployments should normally leave it disabled.
 
 `.env` is ignored by both Git and Docker. It is read by `deploy.sh` on the host
 and its values are passed to the running container; it is not needed while
@@ -74,6 +80,7 @@ insecure cookie mode:
 COUPLE_PASSWORD='local-couple-password' \
 ADMIN_PASSWORD='local-admin-password' \
 TOKEN_SECRET='local-session-and-token-secret' \
+WEDDING_COUPLE_NAMES='Alex & Sam' \
 ALLOW_INSECURE_AUTH=1 \
 npm start
 ```
@@ -130,6 +137,8 @@ docker run -d \
   --restart unless-stopped \
   -p 8091:80 \
   -v utils-nozze-data:/app/data \
+  -e WEDDING_COUPLE_NAMES='Alex & Sam' \
+  -e WEDDING_YEAR='2030' \
   -e COUPLE_PASSWORD='couple-password' \
   -e ADMIN_PASSWORD='admin-password' \
   -e TOKEN_SECRET='long-random-secret' \
@@ -156,8 +165,17 @@ for an off-device backup.
 ## API summary
 
 - `POST /api/login`, `POST /api/logout`, `GET /api/me`
+- `GET /api/config` (public, allowlisted display settings only)
 - `GET|POST /api/guests`, `PATCH|DELETE /api/guests/:id`
 - `GET|POST /api/tables`, `PATCH|DELETE /api/tables/:id`
 - `GET /api/backup` (admin only)
 - `/api/admin/gallery/*` for authenticated gallery operations
 - `/api/gallery*` for guest-token-protected gallery access
+
+## Roadmap / TODO
+
+- Make the seating-room floorplan dynamic and customizable instead of encoding
+  one fixed layout in the frontend. A deployment should be able to define the
+  room shape, dimensions, walls, doors, labels, and optional background image,
+  while table coordinates remain normalized so layouts adapt across screen and
+  print sizes.

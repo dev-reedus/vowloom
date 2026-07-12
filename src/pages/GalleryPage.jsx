@@ -6,7 +6,14 @@ import { GALLERY_PAGE_SIZE } from './gallery/galleryUtils'
 import GalleryPhotoTile from './gallery/GalleryPhotoTile'
 import useGalleryLightbox from './gallery/useGalleryLightbox'
 
-export default function GalleryPage({ token, isAdmin = false, preview = false, lang: forcedLang = "", showLangToggle = true }) {
+export default function GalleryPage({
+  token,
+  isAdmin = false,
+  preview = false,
+  lang: forcedLang = '',
+  showLangToggle = true,
+  publicConfig = { couple_names: 'The Couple' },
+}) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -200,7 +207,7 @@ export default function GalleryPage({ token, isAdmin = false, preview = false, l
       )}
 
       <header className="gallery-head">
-        <p className="kicker">Marius & Giorgiana</p>
+        <p className="kicker">{publicConfig.couple_names}</p>
         <h1>{data?.album?.title || t.galleryDefaultTitle}</h1>
         <p>
           {preview

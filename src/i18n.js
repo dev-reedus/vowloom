@@ -1,7 +1,7 @@
 export const translations = {
   it: {
     kicker: 'Le nostre nozze',
-    title: 'Marius & Giorgiana',
+    title: 'La coppia',
     subtitle: 'Lista invitati e conferme',
     guests: 'Invitati',
     sentCount: 'Inviti Spediti',
@@ -87,6 +87,8 @@ export const translations = {
     seatsWord: 'posti',
     printList: 'Stampa lista',
     printCards: 'Segnaposti',
+    printWeddingTitle: (names) => `Nozze di ${names}`,
+    footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 
     // gallery admin
     galleryAdminKicker: 'Galleria',
@@ -203,7 +205,7 @@ export const translations = {
   },
   en: {
     kicker: 'Our wedding',
-    title: 'Marius & Giorgiana',
+    title: 'The Couple',
     subtitle: 'Guest List & RSVP Tracker',
     guests: 'Guests',
     sentCount: 'Invitations Sent',
@@ -289,6 +291,8 @@ export const translations = {
     seatsWord: 'seats',
     printList: 'Print list',
     printCards: 'Place cards',
+    printWeddingTitle: (names) => `${names} · Seating plan`,
+    footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 
     // gallery admin
     galleryAdminKicker: 'Gallery',
@@ -405,7 +409,7 @@ export const translations = {
   },
   ro: {
     kicker: 'Nunta noastră',
-    title: 'Marius & Giorgiana',
+    title: 'Cuplul',
     subtitle: 'Lista invitaților și confirmări',
     guests: 'Invitați',
     sentCount: 'Invitații trimise',
@@ -485,6 +489,8 @@ export const translations = {
     seatsWord: 'locuri',
     printList: 'Tipărește lista',
     printCards: 'Carduri locuri',
+    printWeddingTitle: (names) => `Nunta ${names}`,
+    footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 
     galleryAdminKicker: 'Galerie',
     galleryAdminTitle: 'Fotografii',
@@ -622,8 +628,8 @@ export function getStoredLang() {
   }
 }
 
-export function loadLang() {
-  return getStoredLang() || 'it'
+export function loadLang(fallback = 'it') {
+  return getStoredLang() || normalizeLang(fallback)
 }
 
 export function getStoredGalleryLang() {

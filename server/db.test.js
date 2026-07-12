@@ -11,6 +11,7 @@ const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'nozze-test-'))
 const DB_PATH = path.join(TMP, 'test.db')
 process.env.DB_PATH = DB_PATH
 process.env.SEED_FILE = path.join(TMP, 'no-such-seed.txt')
+delete process.env.SEED_EXAMPLE_TABLES
 
 const LEGACY_RAW_TOKEN = 'legacy-raw-token-test'
 
@@ -60,9 +61,11 @@ const {
   listAccessTokens,
   listGalleryPhotosPage,
   listGuests,
+  listTables,
   recordOriginalDownloadUrl,
   revokeAccessToken,
   setGalleryMonthlyBudget,
+  seedTablesIfEmpty,
   softDeleteAccessToken,
   updateGuest,
   upsertGalleryPhoto,
@@ -75,6 +78,21 @@ test('migration backfills reply_status from the legacy accepted column', () => {
   const legacy = listGuests().find((g) => g.name === 'Legacy Accepted')
   assert.equal(legacy.reply_status, 'accepted')
   assert.equal(legacy.accepted, true)
+})
+
+test('example tables are opt-in and use a generic layout', () => {
+  assert.deepEqual(seedTablesIfEmpty(), { seeded: 0, reason: 'disabled' })
+  process.env.SEED_EXAMPLE_TABLES = '1'
+  assert.deepEqual(seedTablesIfEmpty(), { seeded: 6, reason: 'seeded' })
+  assert.deepEqual(listTables().map((table) => table.label), [
+    'Table 1',
+    'Table 2',
+    'Table 3',
+    'Table 4',
+    'Table 5',
+    'Table 6',
+  ])
+  delete process.env.SEED_EXAMPLE_TABLES
 })
 
 test('a new guest defaults to pending / not accepted', () => {

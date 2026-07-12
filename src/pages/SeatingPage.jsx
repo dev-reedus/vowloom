@@ -14,6 +14,7 @@ export default function SeatingPage({
   updateTable,
   addTable,
   removeTable,
+  printTitle,
 }) {
   const roomRef = useRef(null)
   const [mode, setMode] = useState('assign') // 'assign' | 'layout'
@@ -198,13 +199,13 @@ export default function SeatingPage({
         onPointerUp={onTablePointerUp}
         onPointerLeave={onTablePointerUp}
       >
+        {/* TODO: Render room geometry, walls, doors, labels, and an optional
+            background from deployment configuration instead of a fixed room. */}
         <svg className="room-shape" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {/* floor tint */}
           <polygon
             className="room-floor"
             points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 25.8,79.4 25.8,38.3 0,38.3"
           />
-          {/* walls as segments, leaving gaps for the CUCINE + INGRESSO doorways */}
           <g className="room-walls">
             <polyline points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 59.5,79.4" />
             <line x1="54.5" y1="79.4" x2="35.5" y2="79.4" />
@@ -399,7 +400,7 @@ export default function SeatingPage({
       {printKind && (
         <div className="print-area">
           {printKind === 'chart' ? (
-            <PrintChart guests={guests} tables={tables} />
+            <PrintChart guests={guests} tables={tables} title={printTitle} />
           ) : (
             <PrintCards guests={guests} tables={tables} />
           )}

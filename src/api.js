@@ -16,6 +16,8 @@ export const api = {
     }
   },
 
+  publicConfig: () => req('/api/config'),
+
   // auth / session
   me: async () => {
     const res = await fetch('/api/me')

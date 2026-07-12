@@ -324,12 +324,12 @@
 .chip.noseat { opacity: 0.85; border-style: dashed; }
 .chip .tag { color: var(--ink-soft); font-style: italic; font-size: 0.85em; }
 
-/* ---- room = wall perimeter only, horizontal (overrides generic .room) ---- */
+/* ---- current venue floorplan; replace when the configurable-room TODO lands ---- */
 .room {
-  aspect-ratio: 1625 / 900;   /* traced from the landscape floorplan */
+  aspect-ratio: 1625 / 900;
   background: transparent;
   border: none;
-  overflow: visible;           /* let wall stroke / labels show fully */
+  overflow: visible;
 }
 
 .room-shape {
@@ -352,7 +352,7 @@
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
-  vector-effect: non-scaling-stroke; /* even wall thickness despite stretch */
+  vector-effect: non-scaling-stroke;
 }
 
 .room-label {
@@ -462,4 +462,3 @@
   min-width: 4.5ch;
   text-align: center;
 }
-

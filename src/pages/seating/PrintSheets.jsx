@@ -6,11 +6,11 @@ const bySeatThenName = (a, b) =>
   (a.seat_index ?? 99) - (b.seat_index ?? 99) || a.name.localeCompare(b.name)
 
 // Print sheet: one block per table with its seated guests, ordered by table number then seat.
-export function PrintChart({ guests, tables }) {
+export function PrintChart({ guests, tables, title }) {
   const sorted = [...tables].sort((a, b) => tableNum(a.label) - tableNum(b.label))
   return (
     <div className="print-chart">
-      <h1 className="print-title">Nozze di Marius e Giorgiana</h1>
+      <h1 className="print-title">{title}</h1>
       <div className="pc-grid">
         {sorted.map((tb) => {
           const gs = guests.filter((g) => g.table_id === tb.id).sort(bySeatThenName)

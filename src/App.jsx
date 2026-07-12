@@ -10,23 +10,48 @@ import SeatingPage from './pages/SeatingPage'
 import LoginView from './pages/LoginView'
 import './App.css'
 
+const FALLBACK_PUBLIC_CONFIG = {
+  couple_names: 'The Couple',
+  wedding_year: '',
+  gallery_title: 'Wedding Gallery',
+  default_language: 'it',
+}
+
 function galleryTokenFromPath() {
   const match = window.location.pathname.match(/^\/g\/([^/]+)\/?$/)
   return match ? decodeURIComponent(match[1]) : null
 }
 
 export default function App() {
+  const [publicConfig, setPublicConfig] = useState(null)
   const galleryToken = galleryTokenFromPath()
-  if (galleryToken) return <GalleryPage token={galleryToken} />
-  return <AuthGate />
+
+  useEffect(() => {
+    let alive = true
+    api
+      .publicConfig()
+      .then((config) => alive && setPublicConfig({ ...FALLBACK_PUBLIC_CONFIG, ...config }))
+      .catch(() => alive && setPublicConfig(FALLBACK_PUBLIC_CONFIG))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (publicConfig) document.title = `${publicConfig.couple_names} · Wedding Guest List`
+  }, [publicConfig])
+
+  if (!publicConfig) return null
+  if (galleryToken) return <GalleryPage token={galleryToken} publicConfig={publicConfig} />
+  return <AuthGate publicConfig={publicConfig} />
 }
 
 // Bootstrap the session: GET /api/me decides login screen vs. the app.
-function AuthGate() {
+function AuthGate({ publicConfig }) {
   const [role, setRole] = useState(null)
   const [checked, setChecked] = useState(false)
-  const [lang, setLang] = useState(loadLang)
-  const t = translations[lang]
+  const [lang, setLang] = useState(() => loadLang(publicConfig.default_language))
+  const t = { ...translations[lang], title: publicConfig.couple_names }
 
   useEffect(() => {
     let alive = true
@@ -56,16 +81,24 @@ function AuthGate() {
 
   if (!checked) return null // brief bootstrap; avoids flashing the login screen
   if (!role) return <LoginView t={t} onLogin={setRole} lang={lang} setLang={setLang} />
-  return <AdminApp role={role} lang={lang} setLang={setLang} onLoggedOut={() => setRole(null)} />
+  return (
+    <AdminApp
+      role={role}
+      lang={lang}
+      setLang={setLang}
+      onLoggedOut={() => setRole(null)}
+      publicConfig={publicConfig}
+    />
+  )
 }
 
-function AdminApp({ role, lang, setLang, onLoggedOut }) {
+function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
   const [guests, setGuests] = useState([])
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'galleryPreview' | 'guestLinks'
   const isAdmin = role === 'admin'
-  const t = translations[lang]
+  const t = { ...translations[lang], title: publicConfig.couple_names }
 
   // Load guests + tables on mount.
   useEffect(() => {
@@ -204,7 +237,13 @@ function AdminApp({ role, lang, setLang, onLoggedOut }) {
       {view === 'galleryAdmin' ? (
         <GalleryAdminPage isAdmin={isAdmin} t={t} />
       ) : view === 'galleryPreview' ? (
-        <GalleryPage isAdmin={isAdmin} preview lang={lang} showLangToggle={false} />
+        <GalleryPage
+          isAdmin={isAdmin}
+          preview
+          lang={lang}
+          showLangToggle={false}
+          publicConfig={publicConfig}
+        />
       ) : view === 'guestLinks' && isAdmin ? (
         <GuestLinksAdminPage isAdmin={isAdmin} t={t} />
       ) : view === 'list' ? (
@@ -226,6 +265,7 @@ function AdminApp({ role, lang, setLang, onLoggedOut }) {
           updateTable={updateTable}
           addTable={addTable}
           removeTable={removeTable}
+          printTitle={t.printWeddingTitle(publicConfig.couple_names)}
         />
       )}
 
@@ -245,7 +285,9 @@ function AdminApp({ role, lang, setLang, onLoggedOut }) {
             {t.backup}
           </a>
         )}
-        <span className="foot-credit">Nozze di Marius e Giorgiana - 2026</span>
+        <span className="foot-credit">
+          {t.footerCredit(publicConfig.couple_names, publicConfig.wedding_year)}
+        </span>
       </footer>
     </div>
   )
