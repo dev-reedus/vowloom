@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Images, Sparkles } from 'lucide-react'
 import 'photoswipe/style.css'
 import { api } from '../api'
+import AppIcon from '../components/AppIcon'
 import { getStoredGalleryLang, nextLang, normalizeLang, setStoredGalleryLang, translations } from '../i18n'
 import { GALLERY_PAGE_SIZE } from './gallery/galleryUtils'
 import GalleryPhotoTile from './gallery/GalleryPhotoTile'
@@ -219,10 +222,23 @@ export default function GalleryPage({
       </header>
 
       {photos.length === 0 ? (
-        <section className="gallery-empty">
+        <motion.section
+          className="gallery-empty"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        >
+          <div className="gallery-empty-mark" aria-hidden="true">
+            <span className="gallery-empty-card is-back" />
+            <span className="gallery-empty-card is-front">
+              <AppIcon icon={Images} size={35} strokeWidth={1.55} />
+            </span>
+            <AppIcon icon={Sparkles} className="gallery-empty-sparkle" size={23} strokeWidth={1.7} />
+          </div>
+          <span className="gallery-empty-kicker">{t.galleryEmptyKicker}</span>
           <h2>{t.galleryEmptyTitle}</h2>
           <p>{t.galleryEmptyBody}</p>
-        </section>
+        </motion.section>
       ) : (
         <section className="photo-grid" aria-label={t.galleryPhotosLabel}>
           {photos.map((photo) => (

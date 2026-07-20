@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronDown, CircleCheckBig, Search, Send, UsersRound, X } from 'lucide-react'
+import AppIcon from '../components/AppIcon'
 
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
   const [name, setName] = useState('')
@@ -76,9 +78,9 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.25 }}
       >
-        <Stat label={t.guests} value={stats.total} />
-        <Stat label={t.sentCount} value={stats.sent} accent="sent" />
-        <Stat label={t.acceptedCount} value={stats.accepted} accent="accepted" />
+        <Stat label={t.guests} value={stats.total} icon={UsersRound} />
+        <Stat label={t.sentCount} value={stats.sent} accent="sent" icon={Send} />
+        <Stat label={t.acceptedCount} value={stats.accepted} accent="accepted" icon={CircleCheckBig} />
       </motion.section>
 
       <div className="stats-more">
@@ -89,7 +91,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
           onClick={() => setShowStats((v) => !v)}
         >
           {showStats ? t.statsLess : t.statsMore}
-          <span className="chev" aria-hidden="true">▾</span>
+          <AppIcon icon={ChevronDown} className="chev" size={15} />
         </button>
 
         <AnimatePresence initial={false}>
@@ -135,15 +137,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       </motion.form>
 
       <div className="search-box">
-        <svg className="search-ico" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <AppIcon icon={Search} className="search-ico" size={18} />
         <input
           type="search"
           value={query}
@@ -229,7 +223,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                 aria-label={t.remove(guest.name)}
                 title={t.remove(guest.name)}
               >
-                ×
+                <AppIcon icon={X} size={16} strokeWidth={2.1} />
               </button>
             </motion.li>
           ))}
@@ -250,9 +244,10 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
   )
 }
 
-function Stat({ label, value, accent, hint }) {
+function Stat({ label, value, accent, hint, icon }) {
   return (
     <div className={`stat ${accent ? `stat--${accent}` : ''}`}>
+      {icon && <span className="stat-icon"><AppIcon icon={icon} size={18} /></span>}
       <motion.span
         className="stat-value"
         key={value}

@@ -58,6 +58,7 @@ const {
   deleteGalleryPhoto,
   getGalleryBudgetStatus,
   getGalleryPhoto,
+  getFloorplan,
   listAccessTokens,
   listGalleryPhotosPage,
   listGuests,
@@ -68,6 +69,7 @@ const {
   seedTablesIfEmpty,
   softDeleteAccessToken,
   updateGuest,
+  updateFloorplan,
   upsertGalleryPhoto,
   validateGalleryToken,
 } = await import('./db.js')
@@ -93,6 +95,25 @@ test('example tables are opt-in and use a generic layout', () => {
     'Table 6',
   ])
   delete process.env.SEED_EXAMPLE_TABLES
+})
+
+test('legacy databases receive the historical floorplan and updates use optimistic revisions', () => {
+  const initial = getFloorplan()
+  assert.equal(initial.revision, 1)
+  assert.equal(initial.data.version, 1)
+  assert.equal(initial.data.boundary.length, 12)
+  assert.deepEqual(initial.data.canvas, { width: 16.25, height: 9, unit: 'm' })
+  assert.deepEqual(initial.data.doors.map((door) => door.id), ['door-kitchen', 'door-guest'])
+
+  const changed = structuredClone(initial.data)
+  changed.boundary = [
+    { x: 0, y: 0 }, { x: 12, y: 0 }, { x: 12, y: 8 }, { x: 0, y: 8 },
+  ]
+  changed.labels.push({ id: 'test-label', text: 'Terrace', x: 2, y: 2 })
+  const saved = updateFloorplan(changed, initial.revision)
+  assert.equal(saved.revision, 2)
+  assert.equal(saved.data.labels.at(-1).text, 'Terrace')
+  assert.equal(updateFloorplan(changed, initial.revision), null)
 })
 
 test('a new guest defaults to pending / not accepted', () => {

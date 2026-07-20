@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { DatabaseBackup } from 'lucide-react'
+import AppIcon from './components/AppIcon'
 import { LANG_KEY, loadLang, nextLang, translations } from './i18n'
 import { api } from './api'
 import GuestListPage from './pages/GuestListPage'
@@ -94,19 +96,21 @@ function AuthGate({ publicConfig }) {
 function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
   const [guests, setGuests] = useState([])
   const [tables, setTables] = useState([])
+  const [floorplan, setFloorplan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('list') // 'list' | 'seating' | 'galleryAdmin' | 'galleryPreview' | 'guestLinks'
   const isAdmin = role === 'admin'
   const t = { ...translations[lang], title: publicConfig.couple_names }
 
-  // Load guests + tables on mount.
+  // Load seating data and the configurable room on mount.
   useEffect(() => {
     let alive = true
-    Promise.all([api.list(), api.listTables()])
-      .then(([g, tb]) => {
+    Promise.all([api.list(), api.listTables(), api.floorplan()])
+      .then(([g, tb, fp]) => {
         if (!alive) return
         setGuests(g)
         setTables(tb)
+        setFloorplan(fp)
       })
       .catch((err) => console.error('Failed to load data', err))
       .finally(() => alive && setLoading(false))
@@ -194,6 +198,27 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
     }
   }
 
+  async function updateFloorplan(data) {
+    const saved = await api.updateFloorplan(floorplan.revision, data)
+    setFloorplan(saved)
+    return saved
+  }
+
+  async function uploadFloorplanBackground(file) {
+    const saved = await api.uploadFloorplanBackground(file)
+    setFloorplan(saved)
+    return saved
+  }
+
+  async function removeFloorplanBackground() {
+    await api.removeFloorplanBackground()
+    setFloorplan((current) => current && {
+      ...current,
+      has_background: false,
+      background_revision: null,
+    })
+  }
+
   return (
     <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''}`}>
       <div className="page-actions">
@@ -259,11 +284,15 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
           t={t}
           guests={guests}
           tables={tables}
+          floorplan={floorplan}
           loading={loading}
           updateGuest={updateGuest}
           updateTable={updateTable}
           addTable={addTable}
           removeTable={removeTable}
+          updateFloorplan={updateFloorplan}
+          uploadFloorplanBackground={uploadFloorplanBackground}
+          removeFloorplanBackground={removeFloorplanBackground}
           printTitle={t.printWeddingTitle(publicConfig.couple_names)}
         />
       )}
@@ -271,16 +300,7 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
       <footer className="foot">
         {isAdmin && (
           <a className="backup-btn" href="/api/backup" title={t.backupTitle} download>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <AppIcon icon={DatabaseBackup} />
             {t.backup}
           </a>
         )}

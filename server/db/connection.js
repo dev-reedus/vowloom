@@ -15,6 +15,15 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true })
 export const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 
+// Capture the pre-migration schema. Once CREATE TABLE runs below, a database
+// upgraded from the hardcoded-SVG release would otherwise look identical to a
+// genuinely new installation.
+const preMigrationTables = new Set(
+  db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name),
+)
+export const isLegacyFloorplanUpgrade = preMigrationTables.has('guests')
+  && !preMigrationTables.has('floorplans')
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS guests (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +43,20 @@ db.exec(`
     w        REAL    NOT NULL DEFAULT 0.14,       -- normalized (reserved for later)
     h        REAL    NOT NULL DEFAULT 0.14,
     rotation REAL    NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS floorplans (
+    id         INTEGER PRIMARY KEY CHECK (id = 1),
+    revision   INTEGER NOT NULL DEFAULT 1,
+    data_json  TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS floorplan_backgrounds (
+    id           INTEGER PRIMARY KEY CHECK (id = 1),
+    content_type TEXT NOT NULL,
+    image_data   BLOB NOT NULL,
+    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS gallery_albums (
@@ -184,7 +207,7 @@ function ensureDefaultAlbum() {
 }
 ensureDefaultAlbum()
 
-// A consistent, standalone snapshot of the whole database (guests + tables),
+// A consistent, standalone snapshot of the whole application database,
 // for off-device backup. Checkpoint the WAL first so recent writes are folded
 // into the main file, then serialize the committed state into a Buffer.
 export function backupDatabase() {

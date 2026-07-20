@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import sharp from 'sharp'
 
 // Test env must be set before importing config/app (both read env at load).
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'nozze-http-'))
@@ -182,6 +183,66 @@ test('malformed guest and table requests return JSON validation errors', async (
 
   const badId = await fetch(`${base}/api/tables/not-an-id`, { method: 'DELETE', headers: { cookie } })
   assert.equal(badId.status, 400)
+})
+
+test('floorplan can be loaded, validated, saved, and given a background', async () => {
+  const anonymous = await fetch(`${base}/api/floorplan`)
+  assert.equal(anonymous.status, 401)
+
+  const { cookie } = await loginCookie('couple-pw-aaa')
+  const jsonHeaders = { cookie, 'Content-Type': 'application/json' }
+  const loaded = await fetch(`${base}/api/floorplan`, { headers: { cookie } })
+  assert.equal(loaded.status, 200)
+  const floorplan = await loaded.json()
+  assert.equal(floorplan.data.version, 1)
+  assert.deepEqual(floorplan.data.boundary, [])
+
+  const changed = structuredClone(floorplan.data)
+  changed.boundary = [
+    { x: 0, y: 0 }, { x: 12, y: 0 }, { x: 12, y: 8 }, { x: 0, y: 8 },
+  ]
+  changed.labels.push({ id: 'http-label', text: 'Dance floor', x: 3, y: 3 })
+  const saved = await fetch(`${base}/api/floorplan`, {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({ revision: floorplan.revision, data: changed }),
+  })
+  assert.equal(saved.status, 200)
+  assert.equal((await saved.json()).revision, floorplan.revision + 1)
+
+  const stale = await fetch(`${base}/api/floorplan`, {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({ revision: floorplan.revision, data: changed }),
+  })
+  assert.equal(stale.status, 409)
+
+  const crossing = { ...changed, boundary: [
+    { x: 0, y: 0 }, { x: 4, y: 4 }, { x: 0, y: 4 }, { x: 4, y: 0 },
+  ] }
+  const invalid = await fetch(`${base}/api/floorplan`, {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({ revision: floorplan.revision + 1, data: crossing }),
+  })
+  assert.equal(invalid.status, 400)
+  assert.match((await invalid.json()).error, /enclose an area|cross itself/)
+
+  const onePixelPng = await sharp({
+    create: { width: 1, height: 1, channels: 4, background: '#fffaf4' },
+  }).png().toBuffer()
+  const uploaded = await fetch(`${base}/api/floorplan/background`, {
+    method: 'POST',
+    headers: { cookie, 'Content-Type': 'image/png' },
+    body: onePixelPng,
+  })
+  assert.equal(uploaded.status, 201)
+  assert.equal((await uploaded.json()).has_background, true)
+
+  const background = await fetch(`${base}/api/floorplan/background`, { headers: { cookie } })
+  assert.equal(background.status, 200)
+  assert.equal(background.headers.get('content-type'), 'image/webp')
+  assert.ok((await background.arrayBuffer()).byteLength > 0)
 })
 
 test('a malformed session cookie returns 401 instead of 500', async () => {

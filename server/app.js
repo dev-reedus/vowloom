@@ -5,6 +5,7 @@ import { securityHeaders } from './middleware/securityHeaders.js'
 import { authRouter } from './routes/auth.js'
 import { guestsRouter } from './routes/guests.js'
 import { tablesRouter } from './routes/tables.js'
+import { floorplanRouter } from './routes/floorplan.js'
 import { galleryRouter } from './routes/gallery.js'
 import { guestLinksRouter } from './routes/guestLinks.js'
 import { galleryAdminRouter } from './routes/galleryAdmin.js'
@@ -29,6 +30,7 @@ export function createApp() {
   // API routers self-guard with requireSession / requireRole.
   app.use(guestsRouter)
   app.use(tablesRouter)
+  app.use(floorplanRouter)
   app.use(galleryRouter) // public, capability-token protected
   app.use(guestLinksRouter)
   app.use(galleryAdminRouter)

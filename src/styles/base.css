@@ -269,7 +269,7 @@
 }
 
 .stats-toggle .chev {
-  font-size: 0.9em;
+  flex: 0 0 auto;
   transition: transform 0.25s ease;
 }
 .stats-toggle.open .chev { transform: rotate(180deg); }
@@ -290,6 +290,21 @@
   backdrop-filter: blur(4px);
   box-shadow: 0 8px 24px rgba(176, 125, 125, 0.08);
 }
+
+.stat-icon {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 0.45rem;
+  place-items: center;
+  color: var(--gold-deep);
+  background: rgba(194, 168, 120, 0.12);
+  border: 1px solid rgba(194, 168, 120, 0.24);
+  border-radius: 50%;
+}
+
+.stat--sent .stat-icon { color: var(--sent); }
+.stat--accepted .stat-icon { color: var(--accepted); }
 
 .stat-value {
   display: block;

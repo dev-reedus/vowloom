@@ -1,3 +1,6 @@
+import { Minus, Plus } from 'lucide-react'
+import AppIcon from '../../components/AppIcon'
+
 // Inline +/- control for a party's headcount. Stops pointer/click propagation so
 // it works inside draggable chips and clickable rows without triggering them.
 export default function PartyStepper({ guest, updateGuest }) {
@@ -10,11 +13,11 @@ export default function PartyStepper({ guest, updateGuest }) {
       onClick={(e) => e.stopPropagation()}
     >
       <button className="party-btn" onClick={() => set(n - 1)} disabled={n <= 1} aria-label="-">
-        −
+        <AppIcon icon={Minus} size={13} />
       </button>
       <span className="party-n">{n}</span>
       <button className="party-btn" onClick={() => set(n + 1)} aria-label="+">
-        +
+        <AppIcon icon={Plus} size={13} />
       </button>
     </span>
   )

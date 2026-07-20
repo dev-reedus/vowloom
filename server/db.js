@@ -10,6 +10,14 @@ export { parseGuestList, seedIfEmpty, seedTablesIfEmpty } from './db/seed.js'
 export { listGuests, addGuest, updateGuest, deleteGuest } from './db/guests.js'
 export { listTables, addTable, updateTable, deleteTable } from './db/tables.js'
 export {
+  DEFAULT_FLOORPLAN,
+  getFloorplan,
+  updateFloorplan,
+  getFloorplanBackground,
+  saveFloorplanBackground,
+  deleteFloorplanBackground,
+} from './db/floorplan.js'
+export {
   listAccessTokens,
   createAccessToken,
   revokeAccessToken,

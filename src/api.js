@@ -49,6 +49,22 @@ export const api = {
     req(`/api/tables/${id}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(fields) }),
   removeTable: (id) => req(`/api/tables/${id}`, { method: 'DELETE' }),
 
+  // floorplan
+  floorplan: () => req('/api/floorplan'),
+  updateFloorplan: (revision, data) =>
+    req('/api/floorplan', {
+      method: 'PUT',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ revision, data }),
+    }),
+  uploadFloorplanBackground: (file) =>
+    req('/api/floorplan/background', {
+      method: 'POST',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    }),
+  removeFloorplanBackground: () => req('/api/floorplan/background', { method: 'DELETE' }),
+
   // public gallery
   gallery: (token, params) => req(`/api/gallery?${galleryQuery({ ...(params || {}), token })}`),
   originalDownloadUrl: (photoId, token) =>

@@ -176,11 +176,12 @@
 
 /* ---------- Remove ---------- */
 .remove {
+  display: grid;
   flex-shrink: 0;
   width: 30px;
   height: 30px;
-  line-height: 1;
-  font-size: 1.4rem;
+  padding: 0;
+  place-items: center;
   color: var(--ink-soft);
   background: transparent;
   border: none;
@@ -215,4 +216,3 @@
   letter-spacing: 0.1em;
   font-size: 0.85rem;
 }
-

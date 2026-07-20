@@ -139,11 +139,18 @@ docker run -d \
 
 docker image prune -f >/dev/null 2>&1 || true
 
-# 3. Report where it's reachable.
-IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+# 3. Report where it's reachable. `hostname -I` is available on Linux but not
+# on every host (including macOS), so this optional display lookup must not
+# turn an otherwise successful deployment into a failure under `pipefail`.
+IP_LIST="$(hostname -I 2>/dev/null || true)"
+IP="$(printf '%s\n' "${IP_LIST}" | awk '{print $1}')"
 echo ""
 echo "==> Done. App is live at:"
 echo "     http://localhost:${HOST_PORT}/"
-[ -n "${IP}" ] && echo "     http://${IP}:${HOST_PORT}/   (from other devices on the network)"
+if [ -n "${IP}" ]; then
+  echo "     http://${IP}:${HOST_PORT}/   (from other devices on the network)"
+fi
 echo ""
 echo "    Data volume: ${DATA_VOLUME}  (survives container stop/rm and redeploys)"
+
+exit 0

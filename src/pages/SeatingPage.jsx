@@ -1,22 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { buildSeatMap, elementAt, needsSeat, partySize, tableSize } from './seating/seatingUtils'
+import { Minus, Plus, Printer, TriangleAlert, X } from 'lucide-react'
+import AppIcon from '../components/AppIcon'
+import {
+  buildSeatMap,
+  elementAt,
+  hasRoomOutline,
+  needsSeat,
+  partySize,
+  pointInPolygon,
+  rectangularFloorplan,
+  tableSize,
+} from './seating/seatingUtils'
 import SeatMap from './seating/SeatMap'
 import GuestChip from './seating/GuestChip'
 import PartyStepper from './seating/PartyStepper'
 import { PrintCards, PrintChart } from './seating/PrintSheets'
+import FloorplanSvg from './seating/FloorplanSvg'
+
+const FloorplanEditor = lazy(() => import('./seating/FloorplanEditor'))
 
 export default function SeatingPage({
   t,
   guests,
   tables,
+  floorplan,
   updateGuest,
   updateTable,
   addTable,
   removeTable,
+  updateFloorplan,
+  uploadFloorplanBackground,
+  removeFloorplanBackground,
   printTitle,
 }) {
   const roomRef = useRef(null)
+  const roomViewportRef = useRef(null)
   const [mode, setMode] = useState('assign') // 'assign' | 'layout'
   const [selectedGuestId, setSelectedGuestId] = useState(null)
   const [openTableId, setOpenTableId] = useState(null)
@@ -24,6 +43,11 @@ export default function SeatingPage({
   const [newLabel, setNewLabel] = useState('')
   const [newSeats, setNewSeats] = useState(10)
   const [printKind, setPrintKind] = useState(null) // null | 'chart' | 'cards'
+  const [floorplanOpen, setFloorplanOpen] = useState(false)
+  const [roomZoom, setRoomZoom] = useState(1)
+  const [roomSetupPending, setRoomSetupPending] = useState(false)
+  const [roomSetupError, setRoomSetupError] = useState(false)
+  const hasRoom = hasRoomOutline(floorplan)
 
   // Render the chosen print sheet, fire the browser print dialog, then reset.
   useEffect(() => {
@@ -135,6 +159,51 @@ export default function SeatingPage({
     setDrag(null)
   }
 
+  function changeRoomZoom(rawZoom) {
+    const viewport = roomViewportRef.current
+    const nextZoom = Math.min(3, Math.max(0.75, rawZoom))
+    const centerX = viewport?.scrollWidth
+      ? (viewport.scrollLeft + viewport.clientWidth / 2) / viewport.scrollWidth
+      : 0.5
+    const centerY = viewport?.scrollHeight
+      ? (viewport.scrollTop + viewport.clientHeight / 2) / viewport.scrollHeight
+      : 0.5
+    setRoomZoom(nextZoom)
+    requestAnimationFrame(() => {
+      const current = roomViewportRef.current
+      if (!current) return
+      current.scrollLeft = centerX * current.scrollWidth - current.clientWidth / 2
+      current.scrollTop = centerY * current.scrollHeight - current.clientHeight / 2
+    })
+  }
+
+  function fitRoom() {
+    setRoomZoom(1)
+    requestAnimationFrame(() => {
+      roomViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+    })
+  }
+
+  function openFloorplanEditor() {
+    setRoomSetupError(false)
+    setFloorplanOpen(true)
+  }
+
+  async function startWithRectangle() {
+    if (!floorplan || roomSetupPending) return
+    setRoomSetupPending(true)
+    setRoomSetupError(false)
+    try {
+      await updateFloorplan(rectangularFloorplan(floorplan.data))
+      setRoomZoom(1)
+    } catch (error) {
+      console.error('Failed to create rectangular floorplan', error)
+      setRoomSetupError(true)
+    } finally {
+      setRoomSetupPending(false)
+    }
+  }
+
   return (
     <div className="seating">
       <header className="seating-head">
@@ -165,11 +234,14 @@ export default function SeatingPage({
           >
             {t.modeLayout}
           </button>
+          <button onClick={openFloorplanEditor} disabled={!floorplan}>
+            {t.modeRoom}
+          </button>
         </div>
 
         <div className="print-actions">
-          <button onClick={() => setPrintKind('chart')}>🖨 {t.printList}</button>
-          <button onClick={() => setPrintKind('cards')}>🖨 {t.printCards}</button>
+          <button onClick={() => setPrintKind('chart')}><AppIcon icon={Printer} />{t.printList}</button>
+          <button onClick={() => setPrintKind('cards')}><AppIcon icon={Printer} />{t.printCards}</button>
         </div>
       </header>
 
@@ -181,7 +253,7 @@ export default function SeatingPage({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
-            <span className="val-ico" aria-hidden="true">⚠</span>
+            <AppIcon icon={TriangleAlert} className="val-ico" size={19} />
             <ul>
               {overTablesCount > 0 && <li>{t.valOverTables(overTablesCount)}</li>}
               {toSeatPeople > 0 && <li>{t.valToSeat(toSeatPeople)}</li>}
@@ -192,84 +264,133 @@ export default function SeatingPage({
       </AnimatePresence>
 
       {/* ---- room / floorplan ---- */}
-      <div
-        className={`room ${mode === 'layout' ? 'is-layout' : ''}`}
-        ref={roomRef}
-        onPointerMove={onTablePointerMove}
-        onPointerUp={onTablePointerUp}
-        onPointerLeave={onTablePointerUp}
-      >
-        {/* TODO: Render room geometry, walls, doors, labels, and an optional
-            background from deployment configuration instead of a fixed room. */}
-        <svg className="room-shape" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polygon
-            className="room-floor"
-            points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 25.8,79.4 25.8,38.3 0,38.3"
-          />
-          <g className="room-walls">
-            <polyline points="0,0 68.5,0 68.5,9.4 71.9,9.4 71.9,0 100,0 100,100 70.2,100 70.2,79.4 59.5,79.4" />
-            <line x1="54.5" y1="79.4" x2="35.5" y2="79.4" />
-            <polyline points="30.5,79.4 25.8,79.4 25.8,38.3 0,38.3 0,0" />
-          </g>
-        </svg>
-        <span className="room-label" style={{ left: '26%', top: '50%' }}>Focolare</span>
-        <span className="room-label" style={{ left: '33%', top: '82%' }}>CUCINE</span>
-        <span className="room-label" style={{ left: '57%', top: '82%' }}>INGRESSO INVITATI</span>
-
-        {tables.length === 0 && <p className="room-empty">{t.emptyTables}</p>}
-
-        {tables.map((tb) => {
-          const pos = drag && drag.id === tb.id ? drag : tb
-          const occ = occupancyOf(tb.id)
-          const over = occ > tb.seats
-          const d = tableSize(tb.seats)
-          return (
-            <div
-              key={tb.id}
-              data-table-id={tb.id}
-              className={[
-                'table-node',
-                tb.shape === 'rect' ? 'rect' : 'round',
-                over ? 'over' : '',
-                openTableId === tb.id ? 'open' : '',
-                mode === 'layout' ? 'draggable' : '',
-              ].join(' ')}
-              style={{
-                left: `${pos.x * 100}%`,
-                top: `${pos.y * 100}%`,
-                width: d,
-                height: tb.shape === 'rect' ? Math.round(d * 0.62) : d,
-              }}
-              onPointerDown={(e) => onTablePointerDown(e, tb)}
-              onClick={() => onTableClick(tb)}
-            >
-              <span className="table-label">{tb.label}</span>
-              <span className={`table-occ ${over ? 'over' : ''}`}>
-                {occ}/{tb.seats}
-              </span>
-
-              {mode === 'layout' && (
-                <button
-                  className="table-del"
-                  title={t.deleteTable}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeTable(tb.id)
-                    if (openTableId === tb.id) setOpenTableId(null)
-                  }}
-                >
-                  ×
-                </button>
-              )}
+      {floorplan && !hasRoom ? (
+        <motion.section
+          className="room-setup"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          aria-labelledby="room-setup-title"
+        >
+          <div className="room-setup-mark" aria-hidden="true">
+            <span /><span /><span /><span />
+          </div>
+          <div className="room-setup-copy">
+            <span className="room-setup-kicker">{t.roomSetupKicker}</span>
+            <h3 id="room-setup-title">{t.roomSetupTitle}</h3>
+            <p>{t.roomSetupDescription}</p>
+          </div>
+          <div className="room-setup-actions">
+            <button type="button" className="room-setup-draw" onClick={openFloorplanEditor}>
+              {t.roomSetupDraw}
+            </button>
+            <button type="button" className="room-setup-rectangle" onClick={startWithRectangle} disabled={roomSetupPending}>
+              {roomSetupPending ? t.roomSetupCreating : t.roomSetupRectangle}
+            </button>
+          </div>
+          {roomSetupError && <p className="room-setup-error" role="alert">{t.roomSetupError}</p>}
+        </motion.section>
+      ) : (
+        <>
+          <div className="room-viewer-head">
+            <span>{t.floorplanViewHint}</span>
+            <div className="room-zoom-controls" aria-label={t.floorplanZoom}>
+              <button type="button" onClick={() => changeRoomZoom(roomZoom / 1.25)} disabled={roomZoom <= 0.75} aria-label={t.floorplanZoomOut}><AppIcon icon={Minus} /></button>
+              <button type="button" className="room-zoom-value" onClick={fitRoom} title={t.floorplanZoomFit}>{Math.round(roomZoom * 100)}%</button>
+              <button type="button" onClick={() => changeRoomZoom(roomZoom * 1.25)} disabled={roomZoom >= 3} aria-label={t.floorplanZoomIn}><AppIcon icon={Plus} /></button>
             </div>
-          )
-        })}
+          </div>
+          <div className="room-viewport" ref={roomViewportRef}>
+            <div
+              className={`room ${mode === 'layout' ? 'is-layout' : ''}`}
+              ref={roomRef}
+              style={floorplan ? {
+                aspectRatio: `${floorplan.data.canvas.width} / ${floorplan.data.canvas.height}`,
+                width: `${roomZoom * 100}%`,
+                marginInline: roomZoom <= 1 ? 'auto' : 0,
+                '--room-node-scale': roomZoom,
+              } : undefined}
+              onPointerMove={onTablePointerMove}
+              onPointerUp={onTablePointerUp}
+              onPointerLeave={onTablePointerUp}
+            >
+              <FloorplanSvg floorplan={floorplan} />
 
-      </div>
+              {tables.length === 0 && <p className="room-empty">{t.emptyTables}</p>}
+
+              {tables.map((tb) => {
+                const pos = drag && drag.id === tb.id ? drag : tb
+                const occ = occupancyOf(tb.id)
+                const over = occ > tb.seats
+                const d = tableSize(tb.seats)
+                const outside = hasRoom && !pointInPolygon(
+                  { x: pos.x * floorplan.data.canvas.width, y: pos.y * floorplan.data.canvas.height },
+                  floorplan.data.boundary,
+                )
+                return (
+                  <div
+                    key={tb.id}
+                    data-table-id={tb.id}
+                    className={[
+                      'table-node',
+                      tb.shape === 'rect' ? 'rect' : 'round',
+                      over ? 'over' : '',
+                      openTableId === tb.id ? 'open' : '',
+                      mode === 'layout' ? 'draggable' : '',
+                      outside ? 'outside' : '',
+                    ].join(' ')}
+                    style={{
+                      left: `${pos.x * 100}%`,
+                      top: `${pos.y * 100}%`,
+                      width: d,
+                      height: tb.shape === 'rect' ? Math.round(d * 0.62) : d,
+                    }}
+                    onPointerDown={(e) => onTablePointerDown(e, tb)}
+                    onClick={() => onTableClick(tb)}
+                  >
+                    <span className="table-label">{tb.label}</span>
+                    <span className={`table-occ ${over ? 'over' : ''}`}>
+                      {occ}/{tb.seats}
+                    </span>
+
+                    {mode === 'layout' && (
+                      <button
+                        className="table-del"
+                        title={t.deleteTable}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeTable(tb.id)
+                          if (openTableId === tb.id) setOpenTableId(null)
+                        }}
+                      >
+                        <AppIcon icon={X} size={13} strokeWidth={2.2} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      <AnimatePresence>
+        {floorplanOpen && floorplan && (
+          <Suspense fallback={<div className="floorplan-editor-backdrop" aria-busy="true" />}>
+            <FloorplanEditor
+              floorplan={floorplan}
+              t={t}
+              onSave={updateFloorplan}
+              onClose={() => setFloorplanOpen(false)}
+              onUploadBackground={uploadFloorplanBackground}
+              onRemoveBackground={removeFloorplanBackground}
+            />
+          </Suspense>
+        )}
+      </AnimatePresence>
 
       {/* ---- create-table form (layout mode) ---- */}
-      {mode === 'layout' && (
+      {mode === 'layout' && hasRoom && (
         <div className="table-form">
           <input
             className="tf-name"
@@ -287,7 +408,7 @@ export default function SeatingPage({
             <span>{t.seatsWord}</span>
           </label>
           <button className="tf-add" onClick={createTable}>
-            {t.addTable}
+            <AppIcon icon={Plus} />{t.addTable}
           </button>
         </div>
       )}
@@ -310,7 +431,7 @@ export default function SeatingPage({
                   }
                   aria-label="-"
                 >
-                  −
+                  <AppIcon icon={Minus} size={14} />
                 </button>
                 <span className="scn">
                   {openTable.seats} {t.seatsWord}
@@ -319,7 +440,7 @@ export default function SeatingPage({
                   onClick={() => updateTable(openTable.id, { seats: openTable.seats + 1 })}
                   aria-label="+"
                 >
-                  +
+                  <AppIcon icon={Plus} size={14} />
                 </button>
               </span>
             </h3>
@@ -363,7 +484,7 @@ export default function SeatingPage({
                       updateGuest(g.id, { table_id: null })
                     }}
                   >
-                    ×
+                    <AppIcon icon={X} size={14} strokeWidth={2.1} />
                   </button>
                 </div>
               ))}

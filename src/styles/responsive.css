@@ -41,6 +41,12 @@
     border-radius: 14px;
   }
 
+  .stat-icon {
+    width: 27px;
+    height: 27px;
+    margin-bottom: 0.35rem;
+  }
+
   .stat-value {
     font-size: 1.8rem;
   }

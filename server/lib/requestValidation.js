@@ -99,6 +99,131 @@ export function tableBody(rawBody, { partial = false } = {}) {
   return fields
 }
 
+function point(value, field, canvas) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${field} must be a point`)
+  onlyFields(value, new Set(['x', 'y']))
+  return {
+    x: finiteNumber(value.x, `${field}.x`, { min: 0, max: canvas.width }),
+    y: finiteNumber(value.y, `${field}.y`, { min: 0, max: canvas.height }),
+  }
+}
+
+function array(value, field, { min = 0, max = 100 } = {}) {
+  if (!Array.isArray(value)) fail(`${field} must be an array`)
+  if (value.length < min) fail(`${field} must contain at least ${min} items`)
+  if (value.length > max) fail(`${field} must contain at most ${max} items`)
+  return value
+}
+
+function polygonArea(points) {
+  return Math.abs(points.reduce((sum, p, i) => {
+    const next = points[(i + 1) % points.length]
+    return sum + p.x * next.y - next.x * p.y
+  }, 0) / 2)
+}
+
+function orientation(a, b, c) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
+  if (Math.abs(value) < 1e-9) return 0
+  return value > 0 ? 1 : 2
+}
+
+function onSegment(a, b, c) {
+  return b.x <= Math.max(a.x, c.x) && b.x >= Math.min(a.x, c.x)
+    && b.y <= Math.max(a.y, c.y) && b.y >= Math.min(a.y, c.y)
+}
+
+function segmentsIntersect(a, b, c, d) {
+  const o1 = orientation(a, b, c)
+  const o2 = orientation(a, b, d)
+  const o3 = orientation(c, d, a)
+  const o4 = orientation(c, d, b)
+  if (o1 !== o2 && o3 !== o4) return true
+  return (o1 === 0 && onSegment(a, c, b))
+    || (o2 === 0 && onSegment(a, d, b))
+    || (o3 === 0 && onSegment(c, a, d))
+    || (o4 === 0 && onSegment(c, b, d))
+}
+
+function validateSimplePolygon(points) {
+  if (polygonArea(points) < 0.01) fail('boundary must enclose an area')
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]
+    const b = points[(i + 1) % points.length]
+    for (let j = i + 1; j < points.length; j++) {
+      if (j === i || j === i + 1 || (i === 0 && j === points.length - 1)) continue
+      const c = points[j]
+      const d = points[(j + 1) % points.length]
+      if (segmentsIntersect(a, b, c, d)) fail('boundary must not cross itself')
+    }
+  }
+}
+
+export function floorplanBody(rawBody) {
+  const body = objectBody(rawBody)
+  onlyFields(body, new Set(['revision', 'data']))
+  const revision = integer(body.revision, 'revision', { min: 1 })
+  const data = objectBody(body.data)
+  onlyFields(data, new Set(['version', 'canvas', 'boundary', 'walls', 'doors', 'labels', 'background']))
+
+  if (data.version !== 1) fail('floorplan version must be 1')
+  const rawCanvas = objectBody(data.canvas)
+  onlyFields(rawCanvas, new Set(['width', 'height', 'unit']))
+  const canvas = {
+    width: finiteNumber(rawCanvas.width, 'canvas.width', { min: 1, max: 1000 }),
+    height: finiteNumber(rawCanvas.height, 'canvas.height', { min: 1, max: 1000 }),
+    unit: text(rawCanvas.unit, 'canvas.unit', { required: true, max: 12 }),
+  }
+  if (!['m', 'ft', 'custom'].includes(canvas.unit)) fail('canvas.unit must be m, ft, or custom')
+
+  const boundary = array(data.boundary, 'boundary', { min: 3, max: 80 })
+    .map((value, index) => point(value, `boundary[${index}]`, canvas))
+  validateSimplePolygon(boundary)
+
+  const walls = array(data.walls, 'walls', { max: 100 }).map((value, index) => {
+    const wall = objectBody(value)
+    onlyFields(wall, new Set(['id', 'start', 'end']))
+    return {
+      id: text(wall.id, `walls[${index}].id`, { required: true, max: 80 }),
+      start: point(wall.start, `walls[${index}].start`, canvas),
+      end: point(wall.end, `walls[${index}].end`, canvas),
+    }
+  })
+
+  const doors = array(data.doors, 'doors', { max: 100 }).map((value, index) => {
+    const door = objectBody(value)
+    onlyFields(door, new Set(['id', 'x', 'y', 'width', 'rotation']))
+    return {
+      id: text(door.id, `doors[${index}].id`, { required: true, max: 80 }),
+      x: finiteNumber(door.x, `doors[${index}].x`, { min: 0, max: canvas.width }),
+      y: finiteNumber(door.y, `doors[${index}].y`, { min: 0, max: canvas.height }),
+      width: finiteNumber(door.width, `doors[${index}].width`, { min: 0.2, max: Math.max(canvas.width, canvas.height) }),
+      rotation: finiteNumber(door.rotation, `doors[${index}].rotation`, { min: -360, max: 360 }),
+    }
+  })
+
+  const labels = array(data.labels, 'labels', { max: 100 }).map((value, index) => {
+    const label = objectBody(value)
+    onlyFields(label, new Set(['id', 'text', 'x', 'y']))
+    return {
+      id: text(label.id, `labels[${index}].id`, { required: true, max: 80 }),
+      text: text(label.text, `labels[${index}].text`, { required: true, max: 100 }),
+      x: finiteNumber(label.x, `labels[${index}].x`, { min: 0, max: canvas.width }),
+      y: finiteNumber(label.y, `labels[${index}].y`, { min: 0, max: canvas.height }),
+    }
+  })
+
+  const rawBackground = data.background == null ? {} : objectBody(data.background)
+  onlyFields(rawBackground, new Set(['opacity']))
+  const background = {
+    opacity: 'opacity' in rawBackground
+      ? finiteNumber(rawBackground.opacity, 'background.opacity', { min: 0, max: 1 })
+      : 0.35,
+  }
+
+  return { revision, data: { version: 1, canvas, boundary, walls, doors, labels, background } }
+}
+
 export function validationErrorResponse(res, error) {
   if (!(error instanceof RequestValidationError)) return false
   res.status(400).json({ error: error.message })
