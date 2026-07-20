@@ -65,74 +65,302 @@
 /* ---------- Print sheets ---------- */
 .print-area { display: none; }
 
+.print-masthead {
+  margin: 0 0 9mm;
+  text-align: center;
+}
+
 .print-title {
   font-family: 'Great Vibes', cursive;
   font-weight: 400;
-  font-size: 34pt;
-  text-align: center;
-  color: #b07d7d;
-  margin: 0 0 8mm;
+  font-size: 32pt;
+  line-height: 1.05;
+  color: #9f6c72;
+  margin: 1.8mm 0 2.5mm;
+}
+
+.print-flourish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5mm;
+  width: 42mm;
+  color: #a88b58;
+}
+
+.print-flourish i {
+  width: 14mm;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #bda677);
+}
+
+.print-flourish i:last-child {
+  background: linear-gradient(90deg, #bda677, transparent);
+}
+
+.print-flourish b {
+  font-family: Georgia, serif;
+  font-size: 7pt;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.print-title-rule {
+  display: block;
+  width: 22mm;
+  height: 1px;
+  margin: 0 auto;
+  background: #dfd0be;
 }
 
 .pc-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6mm 10mm;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 5mm 7mm;
 }
 
 .pc-table {
-  page-break-inside: avoid;
+  position: relative;
   break-inside: avoid;
-  border: 1px solid #d8c4b8;
-  border-radius: 6px;
-  padding: 4mm 5mm;
+  page-break-inside: avoid;
+  padding: 0 4.5mm 4mm;
+  overflow: hidden;
+  border: 0.35mm solid #d9c9b8;
+  border-radius: 1.5mm;
+  box-shadow: inset 0 0 0 0.5mm #fff, inset 0 0 0 0.75mm #eee5d9;
+}
+
+.pc-table-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3mm;
+  margin: 0 -4.5mm 2.5mm;
+  padding: 3mm 4.5mm 2.3mm;
+  background: #f6f0e8;
+  border-bottom: 0.3mm solid #dfd0be;
 }
 
 .pc-table h2 {
-  margin: 0 0 2mm;
-  font-size: 13pt;
-  color: #5a4a45;
-  border-bottom: 1px solid #ecd9d0;
-  padding-bottom: 1.5mm;
+  min-width: 0;
+  margin: 0;
+  color: #51443f;
+  font-size: 13.5pt;
+  font-weight: 600;
+  line-height: 1.1;
 }
-.pc-table h2 span { float: right; color: #a68a56; font-size: 11pt; }
-.pc-table ol { margin: 0; padding-left: 6mm; }
-.pc-table li { font-size: 11pt; line-height: 1.5; }
-.pc-empty { color: #999; margin: 0; }
 
-.print-cards {
+.pc-capacity {
+  flex: 0 0 auto;
+  color: #977e50;
+  font-size: 9.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pc-capacity i {
+  padding: 0 0.6mm;
+  color: #c4ad83;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.pc-table ol {
+  margin: 0;
+  padding: 0;
+  counter-reset: printed-guests;
+  list-style: none;
+}
+
+.pc-table li {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+  min-height: 5.6mm;
+  padding: 1.1mm 0 0.9mm;
+  color: #51443f;
+  font-size: 10.5pt;
+  line-height: 1.2;
+  border-bottom: 0.2mm dotted #ddd0c4;
+  counter-increment: printed-guests;
+}
+
+.pc-table li:last-child { border-bottom: 0; }
+
+.pc-table li::before {
+  flex: 0 0 4.5mm;
+  color: #ad9473;
+  font-size: 7.5pt;
+  font-variant-numeric: tabular-nums;
+  content: counter(printed-guests, decimal-leading-zero);
+}
+
+.pc-guest-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pc-party-size {
+  flex: 0 0 auto;
+  min-width: 6.5mm;
+  padding: 0.25mm 1.5mm;
+  color: #8f6870;
+  background: #f7edef;
+  border: 0.2mm solid #e5d0d4;
+  border-radius: 99mm;
+  font-size: 7.5pt;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.pc-empty {
+  margin: 2mm 0 0.5mm;
+  color: #b8a89d;
+  font-size: 13pt;
+  font-style: italic;
+  text-align: center;
+}
+
+.print-cards-page {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8mm;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 54mm;
+  gap: 5mm;
+  break-after: page;
+  page-break-after: always;
+}
+
+.print-cards-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
 }
 
 .place-card {
-  page-break-inside: avoid;
-  break-inside: avoid;
-  height: 48mm;
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  min-width: 0;
+  overflow: hidden;
+  padding: 7mm 8mm 6mm;
+  color: #51443f;
+  background:
+    radial-gradient(circle at 50% 42%, #fff 0, #fff 50%, #fbf7f1 100%);
+  border: 0.25mm solid #cdbda9;
+  border-radius: 1mm;
   text-align: center;
-  border: 1px solid #d8c4b8;
-  border-radius: 8px;
 }
-.pcard-name { font-size: 17pt; color: #5a4a45; font-family: 'Cormorant Garamond', serif; }
-.pcard-table { margin-top: 4mm; font-size: 12pt; letter-spacing: 0.08em; color: #b07d7d; }
+
+.place-card::before,
+.place-card::after {
+  position: absolute;
+  z-index: -1;
+  width: 17mm;
+  height: 17mm;
+  border-color: #e2d6c5;
+  content: '';
+}
+
+.place-card::before {
+  top: 2.2mm;
+  left: 2.2mm;
+  border-top: 0.25mm solid;
+  border-left: 0.25mm solid;
+}
+
+.place-card::after {
+  right: 2.2mm;
+  bottom: 2.2mm;
+  border-right: 0.25mm solid;
+  border-bottom: 0.25mm solid;
+}
+
+.pcard-frame {
+  position: absolute;
+  z-index: -1;
+  inset: 3.2mm;
+  border: 0.2mm solid #eee5d8;
+  pointer-events: none;
+}
+
+.place-card .print-flourish {
+  position: absolute;
+  top: 7mm;
+  width: 31mm;
+  gap: 2mm;
+}
+
+.place-card .print-flourish i { width: 9mm; }
+.place-card .print-flourish b { font-size: 6pt; }
+
+.pcard-name {
+  max-width: 100%;
+  margin-top: 3.5mm;
+  color: #51443f;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18pt;
+  font-weight: 500;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.pcard-table {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5mm;
+  width: 100%;
+  margin-top: 4.5mm;
+  color: #9f6c72;
+}
+
+.pcard-table span {
+  width: min(12mm, 18%);
+  height: 1px;
+  background: #d9c7ba;
+}
+
+.pcard-table strong {
+  min-width: 0;
+  font-size: 10pt;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
 
 @media print {
-  @page { margin: 14mm; }
-  body { background: #fff; }
+  @page {
+    size: A4 portrait;
+    margin: 13mm;
+  }
+
+  html,
+  body {
+    width: 100%;
+    min-height: 0;
+    background: #fff;
+  }
+
   body * { visibility: hidden; }
+
   .print-area, .print-area * { visibility: visible; }
+
   .print-area {
     display: block;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    color: #000;
+    color: #51443f;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 
