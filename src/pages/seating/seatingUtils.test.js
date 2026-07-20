@@ -1,6 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hasRoomOutline, pointInPolygon, rectangularFloorplan } from './seatingUtils.js'
+import { hasRoomOutline, pointInPolygon, rectangularFloorplan, tableSize } from './seatingUtils.js'
+
+test('overview table sizes stay compact as seat counts grow', () => {
+  assert.equal(tableSize(1), 44)
+  assert.ok(tableSize(10) < 50)
+  assert.ok(tableSize(20) > tableSize(10))
+  assert.equal(tableSize(100), 56)
+})
 
 test('pointInPolygon handles rectangular and concave floorplans', () => {
   const concaveRoom = [

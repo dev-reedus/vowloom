@@ -220,7 +220,7 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
   }
 
   return (
-    <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''}`}>
+    <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''} ${view === 'seating' ? 'page--planning' : ''}`}>
       <div className="page-actions">
         <button className="logout-btn" onClick={logout} title={t.logout}>
           {t.logout}

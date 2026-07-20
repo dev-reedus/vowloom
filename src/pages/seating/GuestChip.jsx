@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import PartyStepper from './PartyStepper'
+import { initials } from './seatingUtils'
 
 // A draggable guest chip in the unassigned tray. On drag end it reports its
 // centre point so the page can drop it onto a chair or table.
@@ -9,7 +10,10 @@ export default function GuestChip({ guest, t, selected, onSelect, onDropAt, upda
   return (
     <motion.div
       ref={ref}
-      layout
+      role="button"
+      tabIndex="0"
+      aria-pressed={selected}
+      aria-label={guest.name}
       className={`chip draggable ${guest.reply_status === 'maybe' ? 'maybe' : ''} ${
         selected ? 'selected' : ''
       }`}
@@ -24,7 +28,13 @@ export default function GuestChip({ guest, t, selected, onSelect, onDropAt, upda
         if (r) onDropAt(r.left + r.width / 2, r.top + r.height / 2)
       }}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onSelect()
+      }}
     >
+      <span className="chip-avatar" aria-hidden="true">{initials(guest.name)}</span>
       <span className="chip-name">
         {guest.name}
         {guest.reply_status === 'maybe' && <em className="tag tag--maybe"> · {t.maybeTag}</em>}

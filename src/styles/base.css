@@ -148,6 +148,10 @@
   max-width: 1120px;
 }
 
+.page--planning {
+  max-width: 1280px;
+}
+
 /* ---------- Language toggle ---------- */
 .lang-toggle {
   position: absolute;

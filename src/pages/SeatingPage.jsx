@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Minus, Plus, Printer, TriangleAlert, X } from 'lucide-react'
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
+import { Minus, PencilRuler, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react'
 import AppIcon from '../components/AppIcon'
 import {
   buildSeatMap,
   elementAt,
   hasRoomOutline,
+  initials,
   needsSeat,
   partySize,
   pointInPolygon,
@@ -79,6 +80,7 @@ export default function SeatingPage({
   const seatedPeople = guests
     .filter((g) => needsSeat(g) && g.table_id != null)
     .reduce((s, g) => s + partySize(g), 0)
+  const seatedProgress = totalPeople > 0 ? Math.min(100, (seatedPeople / totalPeople) * 100) : 0
 
   // Capacity math counts only guests who need a seat; a guest who has since declined
   // but is still parked at a table is flagged, not counted (below).
@@ -159,6 +161,33 @@ export default function SeatingPage({
     setDrag(null)
   }
 
+  function onTableKeyDown(event, table) {
+    if (mode === 'assign' && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault()
+      onTableClick(table)
+      return
+    }
+    if (mode !== 'layout') return
+    const movement = {
+      ArrowLeft: [-0.01, 0],
+      ArrowRight: [0.01, 0],
+      ArrowUp: [0, -0.01],
+      ArrowDown: [0, 0.01],
+    }[event.key]
+    if (!movement) return
+    event.preventDefault()
+    updateTable(table.id, {
+      x: Math.min(0.97, Math.max(0.03, table.x + movement[0])),
+      y: Math.min(0.95, Math.max(0.05, table.y + movement[1])),
+    })
+  }
+
+  function deleteTable(table) {
+    if (!window.confirm(t.deleteTableConfirm(table.label))) return
+    removeTable(table.id)
+    if (openTableId === table.id) setOpenTableId(null)
+  }
+
   function changeRoomZoom(rawZoom) {
     const viewport = roomViewportRef.current
     const nextZoom = Math.min(3, Math.max(0.75, rawZoom))
@@ -207,41 +236,64 @@ export default function SeatingPage({
   return (
     <div className="seating">
       <header className="seating-head">
-        <h2 className="seating-title">{t.seatingTitle}</h2>
-        <p className="seating-sub">
-          {seatedPeople >= totalPeople && totalPeople > 0
-            ? t.allSeated
-            : t.seatedOf(seatedPeople, totalPeople)}
-        </p>
-
-        <div className="mode-switch">
-          <button
-            className={mode === 'assign' ? 'on' : ''}
-            onClick={() => {
-              setMode('assign')
-              setDrag(null)
-            }}
+        <div className="seating-heading">
+          <h2 className="seating-title">{t.seatingTitle}</h2>
+          <p className="seating-sub">
+            {seatedPeople >= totalPeople && totalPeople > 0
+              ? t.allSeated
+              : t.seatedOf(seatedPeople, totalPeople)}
+          </p>
+          <div
+            className="seating-progress"
+            role="progressbar"
+            aria-label={t.seatingTitle}
+            aria-valuemin="0"
+            aria-valuemax={Math.max(1, totalPeople)}
+            aria-valuenow={seatedPeople}
           >
-            {t.modeAssign}
-          </button>
-          <button
-            className={mode === 'layout' ? 'on' : ''}
-            onClick={() => {
-              setMode('layout')
-              setSelectedGuestId(null)
-              setOpenTableId(null)
-            }}
-          >
-            {t.modeLayout}
-          </button>
-          <button onClick={openFloorplanEditor} disabled={!floorplan}>
-            {t.modeRoom}
-          </button>
+            <motion.span
+              initial={false}
+              animate={{ scaleX: seatedProgress / 100 }}
+              transition={{ type: 'spring', stiffness: 180, damping: 24 }}
+            />
+          </div>
         </div>
 
-        <div className="print-actions">
-          <button onClick={() => setPrintKind('chart')}><AppIcon icon={Printer} />{t.printList}</button>
-          <button onClick={() => setPrintKind('cards')}><AppIcon icon={Printer} />{t.printCards}</button>
+        <div className="seating-toolbar">
+          <div className="mode-switch" aria-label={t.seatingTitle}>
+            <button
+              type="button"
+              className={mode === 'assign' ? 'on' : ''}
+              aria-pressed={mode === 'assign'}
+              onClick={() => {
+                setMode('assign')
+                setDrag(null)
+              }}
+            >
+              {t.modeAssign}
+            </button>
+            <button
+              type="button"
+              className={mode === 'layout' ? 'on' : ''}
+              aria-pressed={mode === 'layout'}
+              onClick={() => {
+                setMode('layout')
+                setSelectedGuestId(null)
+                setOpenTableId(null)
+              }}
+            >
+              {t.modeLayout}
+            </button>
+          </div>
+
+          <div className="seating-toolbar-actions">
+            <button type="button" className="room-edit-action" onClick={openFloorplanEditor} disabled={!floorplan}>
+              <AppIcon icon={PencilRuler} size={16} />
+              {t.modeRoom}
+            </button>
+            <button type="button" onClick={() => setPrintKind('chart')}><AppIcon icon={Printer} />{t.printList}</button>
+            <button type="button" onClick={() => setPrintKind('cards')}><AppIcon icon={Printer} />{t.printCards}</button>
+          </div>
         </div>
       </header>
 
@@ -249,6 +301,8 @@ export default function SeatingPage({
         {hasIssues && (
           <motion.div
             className="seating-validation"
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -290,7 +344,8 @@ export default function SeatingPage({
           {roomSetupError && <p className="room-setup-error" role="alert">{t.roomSetupError}</p>}
         </motion.section>
       ) : (
-        <>
+        <div className={`seating-workspace seating-workspace--${mode}`}>
+          <section className="seating-plan-panel" aria-label={t.seatingTitle}>
           <div className="room-viewer-head">
             <span>{t.floorplanViewHint}</span>
             <div className="room-zoom-controls" aria-label={t.floorplanZoom}>
@@ -330,6 +385,9 @@ export default function SeatingPage({
                   <div
                     key={tb.id}
                     data-table-id={tb.id}
+                    role="button"
+                    tabIndex="0"
+                    aria-label={`${tb.label}, ${occ}/${tb.seats} ${t.seatsWord}`}
                     className={[
                       'table-node',
                       tb.shape === 'rect' ? 'rect' : 'round',
@@ -342,10 +400,11 @@ export default function SeatingPage({
                       left: `${pos.x * 100}%`,
                       top: `${pos.y * 100}%`,
                       width: d,
-                      height: tb.shape === 'rect' ? Math.round(d * 0.62) : d,
+                      height: tb.shape === 'rect' ? Math.max(36, Math.round(d * 0.68)) : d,
                     }}
                     onPointerDown={(e) => onTablePointerDown(e, tb)}
                     onClick={() => onTableClick(tb)}
+                    onKeyDown={(event) => onTableKeyDown(event, tb)}
                   >
                     <span className="table-label">{tb.label}</span>
                     <span className={`table-occ ${over ? 'over' : ''}`}>
@@ -354,16 +413,17 @@ export default function SeatingPage({
 
                     {mode === 'layout' && (
                       <button
+                        type="button"
                         className="table-del"
                         title={t.deleteTable}
+                        aria-label={t.deleteTable}
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation()
-                          removeTable(tb.id)
-                          if (openTableId === tb.id) setOpenTableId(null)
+                          deleteTable(tb)
                         }}
                       >
-                        <AppIcon icon={X} size={13} strokeWidth={2.2} />
+                        <AppIcon icon={Trash2} size={13} strokeWidth={1.9} />
                       </button>
                     )}
                   </div>
@@ -371,7 +431,164 @@ export default function SeatingPage({
               })}
             </div>
           </div>
-        </>
+          </section>
+
+          <aside className="seating-sidebar">
+            {mode === 'layout' ? (
+              <section className="seating-side-card table-creator">
+                <h3>{t.addTable}</h3>
+                <div className="table-form">
+                  <input
+                    className="tf-name"
+                    name="table-label"
+                    autoComplete="off"
+                    aria-label={t.tableNamePlaceholder}
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    placeholder={t.tableNamePlaceholder}
+                  />
+                  <label className="tf-seats">
+                    <input
+                      type="number"
+                      name="table-seats"
+                      min="1"
+                      inputMode="numeric"
+                      aria-label={t.seatsWord}
+                      value={newSeats}
+                      onChange={(e) => setNewSeats(e.target.value)}
+                    />
+                    <span>{t.seatsWord}</span>
+                  </label>
+                  <button type="button" className="tf-add" onClick={createTable}>
+                    <AppIcon icon={Plus} />{t.addTable}
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <LayoutGroup id="seating-sidebar-layout">
+                <AnimatePresence initial={false}>
+                  {openTable && (
+                    <motion.section
+                      className="table-detail"
+                      initial={{ opacity: 0, scale: 0.985 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.985 }}
+                      transition={{ duration: 0.16, ease: 'easeOut' }}
+                    >
+                      <h3>
+                        {openTable.label} · {occupancyOf(openTable.id)}/{openTable.seats}
+                        <span className="seat-count-edit">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateTable(openTable.id, { seats: Math.max(1, openTable.seats - 1) })
+                            }
+                            aria-label="-"
+                          >
+                            <AppIcon icon={Minus} size={14} />
+                          </button>
+                          <span className="scn">
+                            {openTable.seats} {t.seatsWord}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateTable(openTable.id, { seats: openTable.seats + 1 })}
+                            aria-label="+"
+                          >
+                            <AppIcon icon={Plus} size={14} />
+                          </button>
+                        </span>
+                      </h3>
+                      <p className="seat-hint">{t.seatHint}</p>
+
+                      <SeatMap
+                        table={openTable}
+                        guests={guests}
+                        t={t}
+                        selectedGuestId={selectedGuestId}
+                        onSeatClick={(seatIndex, occupant) => {
+                          if (occupant) {
+                            updateGuest(occupant.id, { seat_index: null })
+                          } else if (selectedGuestId != null) {
+                            trySeat(guests.find((g) => g.id === selectedGuestId), openTable.id, seatIndex)
+                          }
+                        }}
+                      />
+
+                      <div className="chips">
+                        {guestsAt(openTable.id).map((g) => (
+                          <div
+                            className={`chip seated ${g.seat_index == null ? 'noseat' : ''} ${
+                              selectedGuestId === g.id ? 'selected' : ''
+                            }`}
+                            key={g.id}
+                            role="button"
+                            tabIndex="0"
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') return
+                              event.preventDefault()
+                              setSelectedGuestId((cur) => (cur === g.id ? null : g.id))
+                            }}
+                            onClick={() =>
+                              setSelectedGuestId((cur) => (cur === g.id ? null : g.id))
+                            }
+                          >
+                            <span className="chip-avatar" aria-hidden="true">{initials(g.name)}</span>
+                            <span className="chip-name">
+                              {g.name}
+                              {g.seat_index == null && <em className="tag"> · {t.noSeat}</em>}
+                            </span>
+                            <PartyStepper guest={g} updateGuest={updateGuest} />
+                            <button
+                              type="button"
+                              className="chip-x"
+                              title={t.unassign}
+                              aria-label={t.unassign}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateGuest(g.id, { table_id: null })
+                              }}
+                            >
+                              <AppIcon icon={X} size={14} strokeWidth={2.1} />
+                            </button>
+                          </div>
+                        ))}
+                        {guestsAt(openTable.id).length === 0 && <p className="muted">{t.dropHint}</p>}
+                      </div>
+                    </motion.section>
+                  )}
+                </AnimatePresence>
+
+                <motion.section
+                  className="tray"
+                  layout="position"
+                  transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
+                >
+                  <h3 className="tray-title">
+                    <span>{t.unassigned}</span>
+                    <strong>{unassigned.reduce((s, g) => s + partySize(g), 0)}</strong>
+                  </h3>
+                  <div className="chips">
+                    <AnimatePresence initial={false}>
+                      {unassigned.map((g) => (
+                        <GuestChip
+                          key={g.id}
+                          guest={g}
+                          t={t}
+                          selected={selectedGuestId === g.id}
+                          onSelect={() => setSelectedGuestId((cur) => (cur === g.id ? null : g.id))}
+                          onDropAt={(x, y) => dropByPoint(g, x, y)}
+                          updateGuest={updateGuest}
+                        />
+                      ))}
+                    </AnimatePresence>
+                    {unassigned.length === 0 && <p className="muted">{t.allSeated}</p>}
+                  </div>
+                </motion.section>
+              </LayoutGroup>
+            )}
+          </aside>
+        </div>
       )}
 
       <AnimatePresence>
@@ -388,134 +605,6 @@ export default function SeatingPage({
           </Suspense>
         )}
       </AnimatePresence>
-
-      {/* ---- create-table form (layout mode) ---- */}
-      {mode === 'layout' && hasRoom && (
-        <div className="table-form">
-          <input
-            className="tf-name"
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            placeholder={t.tableNamePlaceholder}
-          />
-          <label className="tf-seats">
-            <input
-              type="number"
-              min="1"
-              value={newSeats}
-              onChange={(e) => setNewSeats(e.target.value)}
-            />
-            <span>{t.seatsWord}</span>
-          </label>
-          <button className="tf-add" onClick={createTable}>
-            <AppIcon icon={Plus} />{t.addTable}
-          </button>
-        </div>
-      )}
-
-      {/* ---- open table: seat map ---- */}
-      <AnimatePresence>
-        {openTable && (
-          <motion.section
-            className="table-detail"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <h3>
-              {openTable.label} · {occupancyOf(openTable.id)}/{openTable.seats}
-              <span className="seat-count-edit">
-                <button
-                  onClick={() =>
-                    updateTable(openTable.id, { seats: Math.max(1, openTable.seats - 1) })
-                  }
-                  aria-label="-"
-                >
-                  <AppIcon icon={Minus} size={14} />
-                </button>
-                <span className="scn">
-                  {openTable.seats} {t.seatsWord}
-                </span>
-                <button
-                  onClick={() => updateTable(openTable.id, { seats: openTable.seats + 1 })}
-                  aria-label="+"
-                >
-                  <AppIcon icon={Plus} size={14} />
-                </button>
-              </span>
-            </h3>
-            <p className="seat-hint">{t.seatHint}</p>
-
-            <SeatMap
-              table={openTable}
-              guests={guests}
-              t={t}
-              selectedGuestId={selectedGuestId}
-              onSeatClick={(seatIndex, occupant) => {
-                if (occupant) {
-                  updateGuest(occupant.id, { seat_index: null }) // free the chair
-                } else if (selectedGuestId != null) {
-                  trySeat(guests.find((g) => g.id === selectedGuestId), openTable.id, seatIndex)
-                }
-              }}
-            />
-
-            <div className="chips">
-              {guestsAt(openTable.id).map((g) => (
-                <div
-                  className={`chip seated ${g.seat_index == null ? 'noseat' : ''} ${
-                    selectedGuestId === g.id ? 'selected' : ''
-                  }`}
-                  key={g.id}
-                  onClick={() =>
-                    setSelectedGuestId((cur) => (cur === g.id ? null : g.id))
-                  }
-                >
-                  <span className="chip-name">
-                    {g.name}
-                    {g.seat_index == null && <em className="tag"> · {t.noSeat}</em>}
-                  </span>
-                  <PartyStepper guest={g} updateGuest={updateGuest} />
-                  <button
-                    className="chip-x"
-                    title={t.unassign}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      updateGuest(g.id, { table_id: null })
-                    }}
-                  >
-                    <AppIcon icon={X} size={14} strokeWidth={2.1} />
-                  </button>
-                </div>
-              ))}
-              {guestsAt(openTable.id).length === 0 && <p className="muted">{t.dropHint}</p>}
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
-
-      {/* ---- unassigned tray ---- */}
-      <section className="tray">
-        <h3 className="tray-title">
-          {t.unassigned} · {unassigned.reduce((s, g) => s + partySize(g), 0)}
-        </h3>
-        <div className="chips">
-          <AnimatePresence initial={false}>
-            {unassigned.map((g) => (
-              <GuestChip
-                key={g.id}
-                guest={g}
-                t={t}
-                selected={selectedGuestId === g.id}
-                onSelect={() => setSelectedGuestId((cur) => (cur === g.id ? null : g.id))}
-                onDropAt={(x, y) => dropByPoint(g, x, y)}
-                updateGuest={updateGuest}
-              />
-            ))}
-          </AnimatePresence>
-          {unassigned.length === 0 && <p className="muted">{t.allSeated}</p>}
-        </div>
-      </section>
 
       {/* ---- print sheets (hidden on screen, shown when printing) ---- */}
       {printKind && (

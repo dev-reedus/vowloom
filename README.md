@@ -31,20 +31,11 @@ next step.
   <img src="docs/screenshots/guest-list.png" alt="Vowloom guest list and RSVP tracker" width="760">
 </p>
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="docs/screenshots/move-tables.png" alt="Moving tables on the Vowloom seating plan">
-      <br>
-      <sub><b>Design the room</b> - draw the venue, add doors and labels, then position tables.</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="docs/screenshots/seat-guests.png" alt="Assigning guests to seats in Vowloom">
-      <br>
-      <sub><b>Seat your guests</b> - drag parties to a table and choose their seats.</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/screenshots/tables.png" alt="Arranging tables and assigning guests in the Vowloom seating workspace" width="1000">
+  <br>
+  <sub><b>Plan the seating</b> - arrange tables and assign guests from one focused workspace.</sub>
+</p>
 
 <p align="center">
   <img src="docs/screenshots/custom-floorplan.png" alt="Drawing a custom venue floorplan in Vowloom" width="900">

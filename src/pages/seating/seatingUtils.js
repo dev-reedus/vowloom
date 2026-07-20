@@ -1,7 +1,13 @@
 export const partySize = (g) => g.party_size || 1
 // Accepted and "maybe" guests both need a seat and count toward capacity.
 export const needsSeat = (g) => g.reply_status === 'accepted' || g.reply_status === 'maybe'
-export const tableSize = (seats) => 42 + seats * 2.2 // px diameter in the overview
+// Overview tables are compact map markers, not a literal seat-by-seat drawing.
+// Square-root growth keeps larger tables distinguishable without letting a
+// high seat count dominate a dense floorplan.
+export const tableSize = (seats) => {
+  const count = Math.max(1, Number(seats) || 1)
+  return Math.round(Math.min(56, Math.max(44, 40 + Math.sqrt(count) * 2.5)))
+}
 
 export function hasRoomOutline(floorplan) {
   return (floorplan?.data?.boundary?.length || 0) >= 3
