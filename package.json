@@ -2,7 +2,7 @@
   "name": "vowloom",
   "private": true,
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Private wedding planning, seating, and gallery app",
   "type": "module",
   "scripts": {

@@ -8,12 +8,22 @@
 [![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Version](https://img.shields.io/badge/version-1.1.0-C98F92)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-C98F92.svg)](LICENSE)
 
 Manage invitations and replies, arrange tables visually, assign seats, and share
-a private photo gallery—all from one elegant application.
+a private photo gallery-all from one elegant application.
 
 </div>
+
+## The story
+
+Vowloom started as a quick idea for a simple wedding guest list. As new needs
+arose and more ideas came to me, it grew organically into a broader planning
+workspace for invitations, seating, custom floorplans, and sharing memories
+with guests. It was not originally intended to be a public project, but as it
+grew, making it public and easy for others to self-deploy felt like a natural
+next step.
 
 ## Preview
 
@@ -26,21 +36,58 @@ a private photo gallery—all from one elegant application.
     <td width="50%" align="center">
       <img src="docs/screenshots/move-tables.png" alt="Moving tables on the Vowloom seating plan">
       <br>
-      <sub><b>Design the room</b> — add and position tables on the floor plan.</sub>
+      <sub><b>Design the room</b> - draw the venue, add doors and labels, then position tables.</sub>
     </td>
     <td width="50%" align="center">
       <img src="docs/screenshots/seat-guests.png" alt="Assigning guests to seats in Vowloom">
       <br>
-      <sub><b>Seat your guests</b> — drag parties to a table and choose their seats.</sub>
+      <sub><b>Seat your guests</b> - drag parties to a table and choose their seats.</sub>
     </td>
   </tr>
 </table>
+
+<p align="center">
+  <img src="docs/screenshots/custom-floorplan.png" alt="Drawing a custom venue floorplan in Vowloom" width="900">
+  <br>
+  <sub><b>Draw your venue</b> - shape the outline, add walls, doors, labels, and a reference image on an infinite workspace.</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/no-floorplan.png" alt="First-run room setup in Vowloom">
+      <br>
+      <sub><b>Start your way</b> - draw the real room or begin with a rectangle.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/empty-gallery.png" alt="Vowloom empty gallery placeholder">
+      <br>
+      <sub><b>A welcoming empty gallery</b> - guests know their link works before the first upload.</sub>
+    </td>
+  </tr>
+</table>
+
+## What's new in 1.1
+
+- Draw a custom venue on an infinite workspace with outlines, internal walls,
+  doors, labels, undo/redo, zoom, and pan.
+- Add pivots to split and reshape existing walls or outline edges, and use a
+  reference image as an adjustable background.
+- Zoom and pan the finished seating plan while placing tables or assigning
+  guests.
+- Start a new installation by drawing the room or choosing a rectangular quick
+  start; pages that need a room show a clear setup prompt.
+- Enjoy a consistent Lucide icon set and a polished placeholder for empty guest
+  galleries.
+
+See the complete release history in the [changelog](CHANGELOG.md).
 
 ## What Vowloom does
 
 - Tracks guests, invitation delivery, replies, and party sizes.
 - Shows live totals for accepted, tentative, pending, and declined guests.
-- Provides a visual seating plan with movable tables and drag-and-drop assignment.
+- Draws custom venue floorplans with editable outlines, walls, doors, and labels.
+- Provides a zoomable seating plan with movable tables and drag-and-drop assignment.
 - Produces printable guest lists and place cards.
 - Hosts private wedding galleries backed by Cloudflare R2.
 - Creates revocable guest gallery links with language and usage controls.
@@ -116,7 +163,7 @@ These are the main settings:
 | `R2_*` | Cloudflare R2 credentials and bucket configuration |
 | `HOST_PORT` | Host port used by the deployment script |
 | `APP_NAME` | Docker container/image name |
-| `DATA_VOLUME` | Docker volume holding the SQLite database |
+| `DATA_VOLUME` | Docker named volume or absolute host directory mounted at `/app/data` |
 | `SEED_EXAMPLE_TABLES` | Set to `1` to add six demo tables to a new database |
 
 `.env`, SQLite databases, and local guest lists are ignored by Git. The Docker
@@ -172,6 +219,18 @@ The production Express server serves the compiled React app and API from the
 same origin. SQLite holds planning data, sessions, gallery metadata, and guest
 links; large gallery objects can live in R2.
 
+## Upgrading to 1.1.0
+
+Back up the SQLite database, pull the new version, and run `./deploy.sh`. Database
+migrations run automatically at startup; no new environment variables are
+required.
+
+- Existing saved floorplans are left unchanged.
+- An installation upgrading from the original hardcoded SVG receives the same
+  historical room shape as an editable floorplan.
+- A genuinely new installation starts without an assumed room and offers either
+  the custom drawing tool or a rectangular quick start.
+
 ## Docker deployment
 
 The included script builds the image, creates or reuses the data volume, and
@@ -206,7 +265,9 @@ docker run -d \
 
 The container publishes plain HTTP. Place it behind an HTTPS reverse proxy in
 production so secure session cookies work correctly. `/healthz` remains public
-for health checks.
+for health checks. `DATA_VOLUME` defaults to a Docker named volume; set it to an
+absolute host directory if you prefer a bind mount and direct access to the
+SQLite files.
 
 ## Backup and restore
 
@@ -233,6 +294,7 @@ for an off-device backup.
 | Public configuration | `GET /api/config` |
 | Guests | `GET\|POST /api/guests`, `PATCH\|DELETE /api/guests/:id` |
 | Tables | `GET\|POST /api/tables`, `PATCH\|DELETE /api/tables/:id` |
+| Floor plan | `GET\|PUT /api/floorplan`, `GET\|POST\|DELETE /api/floorplan/background` |
 | Backup | `GET /api/backup` (admin only) |
 | Gallery admin | `/api/admin/gallery/*` |
 | Guest gallery | `/api/gallery*` (capability token required) |
@@ -248,12 +310,6 @@ npm run build
 
 `better-sqlite3` is a native dependency. The Docker image uses Node.js 20, so
 use a compatible Node version when developing outside Docker.
-
-## Roadmap
-
-- Make the room floor plan fully configurable—shape, dimensions, walls, doors,
-  labels, and optional background—while preserving normalized table positions
-  across screens and printed layouts.
 
 ## License
 
