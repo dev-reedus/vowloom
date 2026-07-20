@@ -1,6 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, CircleCheckBig, Plus, Search, Send, Trash2, UserPlus, UsersRound } from 'lucide-react'
+import {
+  Check as CheckIcon,
+  ChevronDown,
+  CircleCheckBig,
+  Pencil,
+  Plus,
+  Search,
+  Send,
+  Trash2,
+  UserPlus,
+  UsersRound,
+  X,
+} from 'lucide-react'
 import AppIcon from '../components/AppIcon'
 
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
@@ -207,8 +219,8 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                 <div className="guest-body">
                   <div className="guest-identity">
                     <span className="guest-monogram" aria-hidden="true">{initials(guest.name)}</span>
-                    <span className="guest-name-wrap">
-                      <span className="guest-name" title={guest.name}>{guest.name}</span>
+                    <div className="guest-name-wrap">
+                      <EditableGuestName guest={guest} t={t} updateGuest={updateGuest} />
                       <span className="guest-meta">
                         <span className="guest-status-dot" />
                         {statusLabel}
@@ -216,7 +228,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                           <span className="guest-party">×{guest.party_size}</span>
                         )}
                       </span>
-                    </span>
+                    </div>
                   </div>
 
                   <div className="guest-actions">
@@ -267,6 +279,84 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
         )}
       </ul>
     </>
+  )
+}
+
+function EditableGuestName({ guest, t, updateGuest }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(guest.name)
+
+  useEffect(() => {
+    if (!editing) setDraft(guest.name)
+  }, [guest.name, editing])
+
+  function cancel() {
+    setDraft(guest.name)
+    setEditing(false)
+  }
+
+  function save(event) {
+    event.preventDefault()
+    const name = draft.trim()
+    if (!name) return
+    setDraft(name)
+    setEditing(false)
+    if (name !== guest.name) updateGuest(guest.id, { name })
+  }
+
+  if (editing) {
+    return (
+      <form className="guest-name-editor" onSubmit={save}>
+        <input
+          autoFocus
+          type="text"
+          value={draft}
+          maxLength={200}
+          aria-label={t.guestName}
+          onChange={(event) => setDraft(event.target.value)}
+          onFocus={(event) => event.target.select()}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault()
+              cancel()
+            }
+          }}
+        />
+        <button
+          type="submit"
+          className="guest-name-save"
+          disabled={!draft.trim()}
+          aria-label={t.saveGuestName}
+          title={t.saveGuestName}
+        >
+          <AppIcon icon={CheckIcon} size={15} />
+        </button>
+        <button
+          type="button"
+          className="guest-name-cancel"
+          onClick={cancel}
+          aria-label={t.cancelGuestName}
+          title={t.cancelGuestName}
+        >
+          <AppIcon icon={X} size={15} />
+        </button>
+      </form>
+    )
+  }
+
+  return (
+    <span className="guest-name-row">
+      <span className="guest-name" title={guest.name}>{guest.name}</span>
+      <button
+        type="button"
+        className="guest-name-edit"
+        onClick={() => setEditing(true)}
+        aria-label={t.editGuestName(guest.name)}
+        title={t.editGuestName(guest.name)}
+      >
+        <AppIcon icon={Pencil} size={13} strokeWidth={1.9} />
+      </button>
+    </span>
   )
 }
 

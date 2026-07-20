@@ -16,6 +16,10 @@ const ro = {
     btnYes: 'Da',
     btnMaybe: 'Poate',
     btnNo: 'Nu',
+    guestName: 'Numele invitatului',
+    editGuestName: (name) => `Editează numele lui ${name}`,
+    saveGuestName: 'Salvează numele',
+    cancelGuestName: 'Anulează editarea',
     remove: (name) => `Elimină ${name}`,
     empty: 'Nu există invitați încă. Adaugă primul invitat mai sus.',
     searchPlaceholder: 'Caută un invitat...',
@@ -303,4 +307,3 @@ const ro = {
 }
 
 export default ro
-

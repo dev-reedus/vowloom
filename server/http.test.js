@@ -167,6 +167,30 @@ test('public routes need no session', async () => {
   assert.equal(gallery.status, 401)
 })
 
+test('an existing guest name can be edited', async () => {
+  const { cookie } = await loginCookie('couple-pw-aaa')
+  const headers = { cookie, 'Content-Type': 'application/json' }
+  const created = await fetch(`${base}/api/guests`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name: 'Name before edit' }),
+  })
+  assert.equal(created.status, 201)
+  const guest = await created.json()
+
+  const edited = await fetch(`${base}/api/guests/${guest.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ name: 'Name after edit' }),
+  })
+  assert.equal(edited.status, 200)
+  assert.equal((await edited.json()).name, 'Name after edit')
+
+  const list = await fetch(`${base}/api/guests`, { headers: { cookie } })
+  assert.equal(list.status, 200)
+  assert.equal((await list.json()).find((item) => item.id === guest.id)?.name, 'Name after edit')
+})
+
 test('malformed guest and table requests return JSON validation errors', async () => {
   const { cookie } = await loginCookie('couple-pw-aaa')
   const jsonHeaders = { cookie, 'Content-Type': 'application/json' }

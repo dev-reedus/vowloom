@@ -17,6 +17,10 @@ const it = {
     btnYes: 'Sì',
     btnMaybe: 'Forse',
     btnNo: 'No',
+    guestName: 'Nome dell’invitato',
+    editGuestName: (name) => `Modifica il nome di ${name}`,
+    saveGuestName: 'Salva nome',
+    cancelGuestName: 'Annulla modifica',
     remove: (name) => `Rimuovi ${name}`,
     empty: 'Nessun invitato - aggiungi il primo qui sopra.',
     searchPlaceholder: 'Cerca un invitato…',
@@ -312,4 +316,3 @@ const it = {
 }
 
 export default it
-

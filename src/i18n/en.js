@@ -17,6 +17,10 @@ const en = {
     btnYes: 'Yes',
     btnMaybe: 'Maybe',
     btnNo: 'No',
+    guestName: 'Guest name',
+    editGuestName: (name) => `Edit ${name}'s name`,
+    saveGuestName: 'Save name',
+    cancelGuestName: 'Cancel editing',
     remove: (name) => `Remove ${name}`,
     empty: 'No guests yet - add your first above.',
     searchPlaceholder: 'Search a guest…',
@@ -312,4 +316,3 @@ const en = {
 }
 
 export default en
-

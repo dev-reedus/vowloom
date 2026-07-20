@@ -200,11 +200,20 @@
 
 .guest-name-wrap {
   display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.guest-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
   min-width: 0;
 }
 
 .guest-name {
   display: block;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -213,6 +222,74 @@
   font-weight: 600;
   line-height: 1.08;
   color: var(--ink);
+}
+
+.guest-name-edit,
+.guest-name-save,
+.guest-name-cancel {
+  display: grid;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transition: color 0.18s, background 0.18s, border-color 0.18s, opacity 0.18s;
+}
+
+.guest-name-edit {
+  opacity: 0.58;
+}
+
+.guest-name-row:hover .guest-name-edit,
+.guest-name-edit:focus-visible {
+  color: var(--gold-deep);
+  background: rgba(194, 168, 120, 0.12);
+  border-color: rgba(194, 168, 120, 0.25);
+  opacity: 1;
+}
+
+.guest-name-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.guest-name-editor input {
+  min-width: 90px;
+  width: min(100%, 260px);
+  height: 34px;
+  padding: 0.3rem 0.58rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--gold);
+  border-radius: 9px;
+  box-shadow: 0 0 0 3px rgba(194, 168, 120, 0.14);
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.guest-name-save {
+  color: var(--accepted);
+  background: rgba(143, 174, 134, 0.12);
+  border-color: rgba(143, 174, 134, 0.22);
+}
+
+.guest-name-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.36;
+}
+
+.guest-name-cancel {
+  color: var(--rose-deep);
+  background: rgba(201, 154, 154, 0.1);
+  border-color: rgba(201, 154, 154, 0.18);
 }
 
 .guest-meta {
