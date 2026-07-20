@@ -405,6 +405,7 @@ export default function GalleryAdminPage({ isAdmin, t, lang = 'it' }) {
               <GuestLinksTable
                 tokens={guestTokens}
                 t={t}
+                lang={lang}
                 onCopy={copyGuestLink}
                 showEmpty={false}
                 variant="studio"
