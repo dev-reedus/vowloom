@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { ImagePlus } from 'lucide-react'
+import AppIcon from './AppIcon'
 
 export function formatBytes(bytes) {
   const value = Number(bytes) || 0
@@ -195,6 +197,7 @@ export function UploadDropzone({
         type="file"
         accept={accept}
         multiple={multiple}
+        aria-label={title}
         onChange={(event) => {
           chooseFiles(event.target.files)
           event.target.value = ''
@@ -212,6 +215,9 @@ export function UploadDropzone({
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
       >
+        <span className="upload-dropzone-icon" aria-hidden="true">
+          <AppIcon icon={ImagePlus} size={25} strokeWidth={1.65} />
+        </span>
         <strong>
           {selectedFiles.length === 1
             ? selectedFiles[0].name
@@ -225,7 +231,14 @@ export function UploadDropzone({
             : hint}
         </span>
         {progress > 0 && (
-          <span className="upload-progress" aria-label={progressLabel}>
+          <span
+            className="upload-progress"
+            role="progressbar"
+            aria-label={progressLabel}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={progress}
+          >
             <span style={{ width: `${progress}%` }} />
           </span>
         )}

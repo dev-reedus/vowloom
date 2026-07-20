@@ -17,6 +17,8 @@ import { requireSession, requireRole } from '../middleware/session.js'
 import {
   blockIfGalleryBudgetExceeded,
   galleryBudgetStatus,
+  galleryDownloadFilename,
+  galleryPhotoPayload,
   galleryPagePayload,
   paginationParams,
   titleFromR2Key,
@@ -43,8 +45,9 @@ galleryAdminRouter.post('/api/admin/gallery/settings/budget', admin, (req, res) 
   res.json(galleryBudgetStatus())
 })
 
-galleryAdminRouter.get('/api/admin/gallery/photos', session, (_req, res) => {
-  res.json(listGalleryPhotos())
+galleryAdminRouter.get('/api/admin/gallery/photos', session, (req, res) => {
+  const photos = listGalleryPhotos()
+  res.json(req.query.include_urls === '1' ? photos.map(adminPhotoPayload) : photos)
 })
 
 galleryAdminRouter.delete('/api/admin/gallery/photos/:id', session, async (req, res) => {
@@ -87,7 +90,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos/:id/download-url', session, (
       method: 'GET',
       key: photo.original_key,
       expiresIn: DOWNLOAD_URL_EXPIRES_SECONDS,
-      filename: path.basename(photo.original_key),
+      filename: galleryDownloadFilename(photo),
       disposition: 'attachment',
     }),
     expires_in: DOWNLOAD_URL_EXPIRES_SECONDS,
@@ -96,7 +99,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos/:id/download-url', session, (
 
 galleryAdminRouter.post('/api/admin/gallery/photos', admin, (req, res) => {
   try {
-    res.status(201).json(upsertGalleryPhoto(req.body ?? {}))
+    res.status(201).json(adminPhotoPayload(upsertGalleryPhoto(req.body ?? {})))
   } catch (err) {
     res.status(400).json({ error: err.message || 'could not save photo' })
   }
@@ -110,7 +113,7 @@ galleryAdminRouter.post('/api/admin/gallery/photos/:id/generate-derivatives', se
 
   try {
     const derivatives = await generateGalleryDerivatives(photo)
-    res.json(updateGalleryPhotoDerivatives(photo.id, derivatives))
+    res.json(adminPhotoPayload(updateGalleryPhotoDerivatives(photo.id, derivatives)))
   } catch (err) {
     console.error('[gallery] derivative generation failed', err)
     res.status(500).json({ error: err.message || 'could not generate derivatives' })
@@ -133,7 +136,7 @@ galleryAdminRouter.post('/api/admin/gallery/upload-url', session, (req, res) => 
   })
 
   res.status(201).json({
-    photo,
+    photo: adminPhotoPayload(photo),
     key,
     upload_url: presignR2Url({ method: 'PUT', key, expiresIn: 600, disposition: null }),
     expires_in: 600,
@@ -166,7 +169,7 @@ galleryAdminRouter.post('/api/admin/gallery/import-r2', admin, async (req, res) 
     }
 
     res.status(201).json({
-      imported,
+      imported: imported.map(adminPhotoPayload),
       imported_count: imported.length,
       skipped_count: skipped,
       scanned_count: objects.length,
@@ -177,3 +180,7 @@ galleryAdminRouter.post('/api/admin/gallery/import-r2', admin, async (req, res) 
     res.status(500).json({ error: err.message || 'could not import R2 originals' })
   }
 })
+
+function adminPhotoPayload(photo) {
+  return { ...photo, ...galleryPhotoPayload(photo) }
+}

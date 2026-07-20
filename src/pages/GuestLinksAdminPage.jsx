@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Copy } from 'lucide-react'
 import { api } from '../api'
 import { AdminDateTimeInput, AdminSelect, AdminTextInput } from '../components/AdminControls'
+import AppIcon from '../components/AppIcon'
 
 const LANGUAGE_OPTIONS = [
   { value: 'it', label: 'Italiano' },
@@ -22,20 +24,26 @@ export function GuestLinksTable({
   onRevoke,
   onDelete,
   showEmpty = true,
+  variant = 'default',
 }) {
+  const studio = variant === 'studio'
   return (
-    <div className="admin-table" role="table" aria-label={t.guestLinksTableLabel}>
+    <div className={`admin-table ${studio ? 'guest-links-studio-list' : ''}`} role="table" aria-label={t.guestLinksTableLabel}>
       {tokens.length === 0 ? (
         showEmpty && <p className="empty">{t.guestLinksEmpty}</p>
       ) : (
         tokens.map((token) => (
-          <div className={`admin-row ${token.revoked ? 'is-muted' : ''}`} key={token.token}>
-            <div>
+          <div
+            className={`admin-row ${studio ? 'guest-link-studio-row' : ''} ${token.revoked ? 'is-muted' : ''} ${!token.revoked && token.expires_at ? 'has-expiry' : ''}`}
+            role="row"
+            key={token.token}
+          >
+            <div className="guest-link-identity" role="cell">
               <strong>{token.label}</strong>
               <span>{token.token_preview}</span>
             </div>
-            <div>
-              <span>
+            <div className="guest-link-details" role="cell">
+              <span className={`guest-link-state ${token.revoked ? 'is-revoked' : token.expires_at ? 'has-expiry' : 'is-active'}`}>
                 {token.revoked
                   ? t.guestLinksRevoked
                   : token.expires_at
@@ -47,8 +55,9 @@ export function GuestLinksTable({
               </span>
               <span>{t.guestLinksDefaultLanguage}: {token.default_lang?.toUpperCase?.() || 'IT'}</span>
             </div>
-            <div className="admin-actions">
+            <div className="admin-actions guest-link-actions" role="cell">
               <button type="button" onClick={() => onCopy(token.token)} disabled={token.revoked}>
+                {studio && <AppIcon icon={Copy} size={15} />}
                 {t.guestLinksCopy}
               </button>
               {canManageLinks && (

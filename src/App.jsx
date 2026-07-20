@@ -220,7 +220,7 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
   }
 
   return (
-    <div className={`page ${view === 'galleryPreview' ? 'page--wide' : ''} ${view === 'seating' ? 'page--planning' : ''}`}>
+    <div className={`page ${['galleryAdmin', 'galleryPreview'].includes(view) ? 'page--wide' : ''} ${view === 'seating' ? 'page--planning' : ''}`}>
       <div className="page-actions">
         <button className="logout-btn" onClick={logout} title={t.logout}>
           {t.logout}
@@ -259,10 +259,9 @@ function AdminApp({ role, lang, setLang, onLoggedOut, publicConfig }) {
       </nav>
 
       {view === 'galleryAdmin' ? (
-        <GalleryAdminPage isAdmin={isAdmin} t={t} />
+        <GalleryAdminPage isAdmin={isAdmin} t={t} lang={lang} />
       ) : view === 'galleryPreview' ? (
         <GalleryPage
-          isAdmin={isAdmin}
           preview
           lang={lang}
           showLangToggle={false}

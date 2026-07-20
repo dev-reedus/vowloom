@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Images, Sparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ImageOff, Images, LoaderCircle, Sparkles } from 'lucide-react'
 import 'photoswipe/style.css'
 import { api } from '../api'
 import AppIcon from '../components/AppIcon'
@@ -11,7 +11,6 @@ import useGalleryLightbox from './gallery/useGalleryLightbox'
 
 export default function GalleryPage({
   token,
-  isAdmin = false,
   preview = false,
   lang: forcedLang = '',
   showLangToggle = true,
@@ -21,6 +20,7 @@ export default function GalleryPage({
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [pageInfo, setPageInfo] = useState({ has_more: false, next_offset: 0 })
   const [localLang, setLocalLang] = useState(() => getStoredGalleryLang() || 'it')
   const lang = normalizeLang(forcedLang || localLang)
@@ -59,6 +59,12 @@ export default function GalleryPage({
     document.documentElement.lang = lang
   }, [lang])
 
+  useEffect(() => {
+    if (!notice) return undefined
+    const timeout = window.setTimeout(() => setNotice(''), 4500)
+    return () => window.clearTimeout(timeout)
+  }, [notice])
+
   const photos = data?.photos || []
 
   useEffect(() => {
@@ -70,11 +76,9 @@ export default function GalleryPage({
 
   useGalleryLightbox({
     photosLength: photos.length,
-    preview,
     photosRef,
     tRef,
     onDownloadOriginal: downloadOriginal,
-    onDeletePhoto: deletePreviewPhoto,
   })
 
   useEffect(() => {
@@ -109,6 +113,7 @@ export default function GalleryPage({
       })
     } catch (err) {
       console.error('Failed to load more gallery photos', err)
+      setNotice(tRef.current.galleryLoadMoreError)
     } finally {
       loadingMoreRef.current = false
       setLoadingMore(false)
@@ -136,7 +141,7 @@ export default function GalleryPage({
       window.location.href = url
     } catch (err) {
       console.error('Failed to create download URL', err)
-      alert(tRef.current.galleryDownloadError)
+      setNotice(tRef.current.galleryDownloadError)
     } finally {
       if (button) {
         button.disabled = false
@@ -145,56 +150,7 @@ export default function GalleryPage({
     }
   }
 
-  async function deletePreviewPhoto(photo, button, pswp) {
-    if (!preview) return
-    if (!window.confirm(tRef.current.galleryAdminDeleteConfirm(photo.title))) return
-    const previousText = button?.textContent || tRef.current.galleryAdminDelete
-    if (button) {
-      button.disabled = true
-      button.textContent = tRef.current.galleryPreparing
-    }
-    try {
-      await api.deleteGalleryPhoto(photo.id)
-      pswp?.close()
-      setData((current) => {
-        if (!current) return current
-        return {
-          ...current,
-          photos: (current.photos || []).filter((item) => item.id !== photo.id),
-          total: Math.max(0, Number(current.total || 0) - 1),
-        }
-      })
-      setPageInfo((current) => ({
-        ...current,
-        next_offset: Math.max(0, Number(current.next_offset || 0) - 1),
-      }))
-    } catch (err) {
-      console.error('Failed to delete gallery photo', err)
-      alert(tRef.current.galleryAdminDeleteError)
-    } finally {
-      if (button) {
-        button.disabled = false
-        button.textContent = previousText
-      }
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="gallery-page gallery-state">
-        <p>{t.galleryLoading}</p>
-      </main>
-    )
-  }
-
-  if (error) {
-    return (
-      <main className="gallery-page gallery-state">
-        <h1>{t.galleryUnavailableTitle}</h1>
-        <p>{error}</p>
-      </main>
-    )
-  }
+  const totalPhotos = Math.max(photos.length, Number(data?.total) || 0)
 
   return (
     <main className="gallery-page">
@@ -212,6 +168,7 @@ export default function GalleryPage({
       <header className="gallery-head">
         <p className="kicker">{publicConfig.couple_names}</p>
         <h1 className="script">{t.galleryDefaultTitle}</h1>
+        <span className="gallery-head-divider" aria-hidden="true"><span /></span>
         <p>
           {preview
             ? t.galleryPreviewLabel
@@ -219,9 +176,40 @@ export default function GalleryPage({
               ? t.galleryPrivateFor(data.guest.label)
               : t.galleryPrivate}
         </p>
+        {!loading && !error && totalPhotos > 0 && (
+          <span className="gallery-photo-count">
+            <AppIcon icon={Images} size={15} />
+            {t.galleryPhotoCount(totalPhotos)}
+          </span>
+        )}
       </header>
 
-      {photos.length === 0 ? (
+      {loading ? (
+        <section className="gallery-loading" aria-live="polite" aria-label={t.galleryLoading}>
+          <div className="gallery-loading-label">
+            <AppIcon icon={LoaderCircle} className="gallery-spin" size={17} />
+            {t.galleryLoading}
+          </div>
+          <div className="gallery-skeleton-grid" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, index) => (
+              <span key={index} className={`gallery-skeleton-card gallery-skeleton-card--${(index % 4) + 1}`} />
+            ))}
+          </div>
+        </section>
+      ) : error ? (
+        <motion.section
+          className="gallery-error"
+          role="alert"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <span className="gallery-error-icon" aria-hidden="true">
+            <AppIcon icon={ImageOff} size={30} strokeWidth={1.55} />
+          </span>
+          <h2>{t.galleryUnavailableTitle}</h2>
+          <p>{error}</p>
+        </motion.section>
+      ) : photos.length === 0 ? (
         <motion.section
           className="gallery-empty"
           initial={{ opacity: 0, y: 12 }}
@@ -241,17 +229,35 @@ export default function GalleryPage({
         </motion.section>
       ) : (
         <section className="photo-grid" aria-label={t.galleryPhotosLabel}>
-          {photos.map((photo) => (
-            <GalleryPhotoTile key={photo.id} photo={photo} />
+          {photos.map((photo, index) => (
+            <GalleryPhotoTile key={photo.id} photo={photo} index={index} />
           ))}
         </section>
       )}
 
-      {pageInfo.has_more && (
-        <div className="gallery-load-more" ref={loadMoreRef}>
-          {loadingMore ? t.galleryLoading : ''}
+      {!loading && !error && pageInfo.has_more && (
+        <div className="gallery-load-more" ref={loadMoreRef} role="status" aria-live="polite">
+          <button type="button" onClick={loadMorePhotos} disabled={loadingMore}>
+            {loadingMore && <AppIcon icon={LoaderCircle} className="gallery-spin" size={16} />}
+            {loadingMore ? t.galleryLoading : t.galleryLoadMore}
+          </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            className="gallery-notice"
+            role="status"
+            aria-live="polite"
+            initial={{ opacity: 0, y: 12, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 8, x: '-50%' }}
+          >
+            {notice}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }

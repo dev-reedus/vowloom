@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { Maximize2 } from 'lucide-react'
+import AppIcon from '../../components/AppIcon'
 import { photoDimensions, photoLightboxUrl, photoTileRowsForWidth, photoTileUrl } from './galleryUtils'
 
 // One masonry tile. It measures its rendered width and sets a matching CSS grid
 // row span so the grid packs tightly regardless of photo aspect ratio.
-export default function GalleryPhotoTile({ photo }) {
+export default function GalleryPhotoTile({ photo, index = 0 }) {
   const ref = useRef(null)
   const dimensions = photoDimensions(photo)
   const [rowSpan, setRowSpan] = useState(() => photoTileRowsForWidth(dimensions, 280, 8, 14.4))
@@ -32,7 +34,7 @@ export default function GalleryPhotoTile({ photo }) {
   if (!url) {
     return (
       <span className="photo-tile photo-tile--empty" style={{ gridRowEnd: `span ${rowSpan}` }}>
-        <span>{photo.title}</span>
+        <span className="photo-tile-fallback">{photo.title}</span>
       </span>
     )
   }
@@ -50,10 +52,22 @@ export default function GalleryPhotoTile({ photo }) {
       }}
     >
       {tileUrl ? (
-        <img src={tileUrl} alt={photo.title} loading="lazy" decoding="async" />
+        <img
+          src={tileUrl}
+          alt={photo.title}
+          width={dimensions.width}
+          height={dimensions.height}
+          loading={index < 4 ? 'eager' : 'lazy'}
+          fetchPriority={index < 4 ? 'high' : 'auto'}
+          decoding="async"
+        />
       ) : (
-        <span>{photo.title}</span>
+        <span className="photo-tile-fallback">{photo.title}</span>
       )}
+      <span className="photo-tile-overlay" aria-hidden="true">
+        <span className="photo-tile-title">{photo.title}</span>
+        <AppIcon icon={Maximize2} size={18} strokeWidth={1.8} />
+      </span>
     </a>
   )
 }

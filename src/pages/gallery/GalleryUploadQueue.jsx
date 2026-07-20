@@ -22,7 +22,14 @@ export default function GalleryUploadQueue({ t, uploadQueue, queueStats, uploadi
           </button>
         </div>
       </div>
-      <span className="upload-progress" aria-label={t.galleryAdminUploadProgress(queueStats.progress)}>
+      <span
+        className="upload-progress"
+        role="progressbar"
+        aria-label={t.galleryAdminUploadProgress(queueStats.progress)}
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={queueStats.progress}
+      >
         <span style={{ width: `${queueStats.progress}%` }} />
       </span>
       <div className="upload-queue-list">

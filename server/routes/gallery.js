@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { Router } from 'express'
 import {
   countRecentOriginalDownloadUrls,
@@ -11,6 +10,7 @@ import { isR2Configured, presignR2Url } from '../r2.js'
 import { DAILY_DOWNLOAD_URL_LIMIT, DOWNLOAD_URL_EXPIRES_SECONDS } from '../config.js'
 import {
   blockIfGalleryBudgetExceeded,
+  galleryDownloadFilename,
   galleryPagePayload,
   ipHash,
   paginationParams,
@@ -62,7 +62,7 @@ galleryRouter.post('/api/gallery/photos/:id/download-url', (req, res) => {
       method: 'GET',
       key: photo.original_key,
       expiresIn: DOWNLOAD_URL_EXPIRES_SECONDS,
-      filename: path.basename(photo.original_key),
+      filename: galleryDownloadFilename(photo),
       disposition: 'attachment',
     }),
     expires_in: DOWNLOAD_URL_EXPIRES_SECONDS,

@@ -115,6 +115,27 @@ test('guest links are listable by couple and manageable only by admin', async ()
   assert.equal(coupleDelete.status, 403)
 })
 
+test('gallery admin photo previews are resolved only when explicitly requested', async () => {
+  const { cookie: admin } = await loginCookie('admin-pw-bbb')
+  const created = await fetch(`${base}/api/admin/gallery/photos`, {
+    method: 'POST',
+    headers: { cookie: admin, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Lazy preview test', original_key: 'originals/lazy-preview.jpg' }),
+  })
+  assert.equal(created.status, 201)
+  const photoId = (await created.json()).id
+
+  const metadata = await fetch(`${base}/api/admin/gallery/photos`, { headers: { cookie: admin } })
+  const metadataPhoto = (await metadata.json()).find((photo) => photo.id === photoId)
+  assert.equal(metadataPhoto.original_key, 'originals/lazy-preview.jpg')
+  assert.equal('has_original' in metadataPhoto, false)
+
+  const previews = await fetch(`${base}/api/admin/gallery/photos?include_urls=1`, { headers: { cookie: admin } })
+  const previewPhoto = (await previews.json()).find((photo) => photo.id === photoId)
+  assert.equal(previewPhoto.has_original, true)
+  assert.equal('thumb_url' in previewPhoto, true)
+})
+
 test('logout invalidates the session', async () => {
   const { cookie } = await loginCookie('couple-pw-aaa')
   const out = await fetch(`${base}/api/logout`, { method: 'POST', headers: { cookie } })

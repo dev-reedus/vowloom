@@ -41,6 +41,23 @@ export function titleFromR2Key(key) {
   return path.basename(String(key || 'photo'), path.extname(String(key || ''))).replace(/[-_]+/g, ' ').trim() || 'Photo'
 }
 
+// Use the human gallery title for downloads while preserving the original
+// file extension. R2 object keys remain unchanged.
+export function galleryDownloadFilename(photo) {
+  const originalName = path.basename(String(photo?.original_key || 'photo'))
+  const extension = path.extname(originalName)
+  let title = String(photo?.title || path.basename(originalName, extension) || 'photo').trim()
+  if (extension && title.toLowerCase().endsWith(extension.toLowerCase())) {
+    title = title.slice(0, -extension.length)
+  }
+  const safeTitle = title
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/[. ]+$/g, '')
+    .trim() || 'photo'
+  return `${safeTitle}${extension}`
+}
+
 // Shape a stored photo row into the public payload, resolving thumb/display URLs
 // from public R2 or a presigned GET when the bucket is private.
 export function galleryPhotoPayload(photo) {

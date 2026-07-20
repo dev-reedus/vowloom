@@ -86,7 +86,8 @@ export const api = {
     req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}/revoke`, { method: 'POST' }),
   deleteGalleryToken: (token) =>
     req(`/api/admin/gallery/tokens/${encodeURIComponent(token)}`, { method: 'DELETE' }),
-  listGalleryPhotos: () => req('/api/admin/gallery/photos'),
+  listGalleryPhotos: ({ includeUrls = false } = {}) =>
+    req(`/api/admin/gallery/photos${includeUrls ? '?include_urls=1' : ''}`),
   deleteGalleryPhoto: (photoId) => req(`/api/admin/gallery/photos/${photoId}`, { method: 'DELETE' }),
   galleryPreview: (params) => req(`/api/admin/gallery/preview?${galleryQuery(params || {})}`),
   adminOriginalDownloadUrl: (photoId) =>
