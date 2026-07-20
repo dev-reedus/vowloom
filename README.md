@@ -8,7 +8,7 @@
 [![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Version](https://img.shields.io/badge/version-1.1.0-C98F92)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-C98F92)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-C98F92.svg)](LICENSE)
 
 Manage invitations and replies, arrange tables visually, assign seats, and share
@@ -58,18 +58,22 @@ next step.
   </tr>
 </table>
 
-## What's new in 1.1
+## What's new in 1.2
 
-- Draw a custom venue on an infinite workspace with outlines, internal walls,
-  doors, labels, undo/redo, zoom, and pan.
-- Add pivots to split and reshape existing walls or outline edges, and use a
-  reference image as an adjustable background.
-- Zoom and pan the finished seating plan while placing tables or assigning
-  guests.
-- Start a new installation by drawing the room or choosing a rectangular quick
-  start; pages that need a room show a clear setup prompt.
-- Enjoy a consistent Lucide icon set and a polished placeholder for empty guest
-  galleries.
+- Edit an existing guest's name directly from the guest list, with accessible
+  save and cancel controls in all supported languages.
+- Find guests faster with live search, RSVP filters, status counts, and a more
+  readable responsive guest ledger.
+- Move between focused guest-assignment and table-layout modes in the redesigned
+  seating workspace, with clearer progress and table controls.
+- Work with long unassigned lists without stretching the floorplan, and print
+  refined seating charts and paginated place cards.
+- Manage photos through a redesigned gallery studio with upload progress,
+  overview metrics, on-demand previews, and clearer processing states.
+- Create and review private gallery links through a refreshed access dashboard
+  with clearer expiry controls and localized action feedback.
+- Download gallery originals using their human-readable photo titles while
+  retaining the correct file extension.
 
 See the complete release history in the [changelog](CHANGELOG.md).
 
@@ -210,17 +214,15 @@ The production Express server serves the compiled React app and API from the
 same origin. SQLite holds planning data, sessions, gallery metadata, and guest
 links; large gallery objects can live in R2.
 
-## Upgrading to 1.1.0
+## Upgrading to 1.2.0
 
 Back up the SQLite database, pull the new version, and run `./deploy.sh`. Database
 migrations run automatically at startup; no new environment variables are
 required.
 
-- Existing saved floorplans are left unchanged.
-- An installation upgrading from the original hardcoded SVG receives the same
-  historical room shape as an editable floorplan.
-- A genuinely new installation starts without an assumed room and offers either
-  the custom drawing tool or a rectangular quick start.
+- Existing guests, floorplans, tables, gallery photos, and guest links are left
+  unchanged.
+- No manual migration or gallery re-import is needed.
 
 ## Docker deployment
 

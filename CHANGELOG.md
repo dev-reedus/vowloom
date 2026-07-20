@@ -5,6 +5,50 @@ All notable changes to Vowloom are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-21
+
+### Added
+
+- Inline guest-name editing with save and cancel controls, Enter and Escape
+  keyboard shortcuts, and localized labels in English, Italian, and Romanian.
+- Live counts on guest-list RSVP filters and richer status details on each guest
+  card.
+- A seating progress indicator and keyboard interaction for table and guest
+  selection.
+- Gallery administration overview cards and an opt-in photo library whose
+  preview URLs are loaded only when requested.
+- Clear action progress, success, clipboard-failure, and retry feedback in the
+  guest-link administration page.
+
+### Changed
+
+- Redesigned the guest list, seating workspace, public gallery, gallery
+  administration, and guest-link administration for clearer hierarchy and
+  improved responsive behavior.
+- Consolidated the seating workflow into a responsive floorplan-and-sidebar
+  layout with clearer assignment, table editing, and table creation controls.
+- The unassigned-guest tray now stays aligned with the floorplan on desktop and
+  scrolls independently when the guest list is long.
+- Redesigned printed seating charts and place cards with print-safe pagination
+  and a more polished wedding layout.
+- Gallery downloads now use the photo title as the filename while preserving
+  the original file extension and sanitizing unsafe characters.
+- Gallery administration loads image URLs only when previews are requested,
+  keeping the initial metadata view lighter.
+- Split the translation catalog into one file per language and added a parity
+  test to prevent missing translation keys.
+- Updated documentation screenshots for the refreshed guest-list and seating
+  interfaces.
+
+### Fixed
+
+- Long unassigned guest lists no longer stretch the entire seating workspace.
+
+### Upgrade notes
+
+- No new environment variables or manual database migration steps are required.
+- Existing guests, seating plans, gallery photos, and guest links are preserved.
+
 ## [1.1.0] - 2026-07-20
 
 ### Added
@@ -40,5 +84,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Initial public release.
 
+[1.2.0]: https://github.com/dev-reedus/vowloom/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/dev-reedus/vowloom/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/dev-reedus/vowloom/releases/tag/v1.0.0
