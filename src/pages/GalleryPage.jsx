@@ -153,7 +153,7 @@ export default function GalleryPage({
   const totalPhotos = Math.max(photos.length, Number(data?.total) || 0)
 
   return (
-    <main className="gallery-page">
+    <main className={`gallery-page ${preview ? 'gallery-page--preview' : 'gallery-page--guest'}`}>
       {showLangToggle && (
         <button
           className="lang-toggle gallery-lang-toggle"

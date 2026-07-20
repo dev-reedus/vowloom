@@ -7,6 +7,14 @@
   padding: 2rem 1rem 4rem;
 }
 
+/* The preview sits inside `.page--wide`, whose 1.25rem side padding makes its
+   gallery 40px narrower. Mirror that available width on the standalone guest
+   route so both grids calculate identical column widths and masonry spans. */
+.gallery-page--guest {
+  width: calc(100% - 2.5rem);
+  max-width: calc(1120px - 2.5rem);
+}
+
 .gallery-lang-toggle {
   top: 1rem;
   right: 1rem;
@@ -531,6 +539,14 @@
   }
 
   .pswp__caption { bottom: calc(max(0.85rem, env(safe-area-inset-bottom)) + 3.7rem); }
+}
+
+@media (max-width: 600px) {
+  /* `.page` uses 1rem side padding at this breakpoint. */
+  .gallery-page--guest {
+    width: calc(100% - 2rem);
+    max-width: calc(1120px - 2rem);
+  }
 }
 
 @media (max-width: 420px) {
