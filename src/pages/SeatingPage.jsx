@@ -37,6 +37,8 @@ export default function SeatingPage({
 }) {
   const roomRef = useRef(null)
   const roomViewportRef = useRef(null)
+  const seatingWorkspaceRef = useRef(null)
+  const seatingPlanPanelRef = useRef(null)
   const [mode, setMode] = useState('assign') // 'assign' | 'layout'
   const [selectedGuestId, setSelectedGuestId] = useState(null)
   const [openTableId, setOpenTableId] = useState(null)
@@ -61,6 +63,25 @@ export default function SeatingPage({
       clearTimeout(id)
     }
   }, [printKind])
+
+  // Keep the unassigned tray aligned with the responsive floorplan panel.
+  // The tray's guest list takes over with its own scrollbar once it reaches
+  // this height, instead of making the entire workspace row grow.
+  useEffect(() => {
+    const workspace = seatingWorkspaceRef.current
+    const planPanel = seatingPlanPanelRef.current
+    if (!workspace || !planPanel) return undefined
+
+    const syncPlanHeight = () => {
+      workspace.style.setProperty('--seating-plan-height', `${planPanel.getBoundingClientRect().height}px`)
+    }
+
+    syncPlanHeight()
+    const observer = new ResizeObserver(syncPlanHeight)
+    observer.observe(planPanel)
+
+    return () => observer.disconnect()
+  }, [hasRoom])
 
   function createTable() {
     addTable({
@@ -344,8 +365,8 @@ export default function SeatingPage({
           {roomSetupError && <p className="room-setup-error" role="alert">{t.roomSetupError}</p>}
         </motion.section>
       ) : (
-        <div className={`seating-workspace seating-workspace--${mode}`}>
-          <section className="seating-plan-panel" aria-label={t.seatingTitle}>
+        <div ref={seatingWorkspaceRef} className={`seating-workspace seating-workspace--${mode}`}>
+          <section ref={seatingPlanPanelRef} className="seating-plan-panel" aria-label={t.seatingTitle}>
           <div className="room-viewer-head">
             <span>{t.floorplanViewHint}</span>
             <div className="room-zoom-controls" aria-label={t.floorplanZoom}>
