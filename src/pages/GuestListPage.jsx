@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, CircleCheckBig, Search, Send, UsersRound, X } from 'lucide-react'
+import { ChevronDown, CircleCheckBig, Plus, Search, Send, Trash2, UserPlus, UsersRound } from 'lucide-react'
 import AppIcon from '../components/AppIcon'
 
 export default function GuestListPage({ t, guests, loading, addGuest, updateGuest, removeGuest }) {
@@ -21,6 +21,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       maybe: by('maybe'),
       declined: by('declined'),
       pending: by('pending'),
+      notSent: guests.filter((g) => !g.sent).length,
       headsAccepted: heads('accepted'),
       headsMaybe: heads('maybe'),
     }
@@ -51,6 +52,14 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
   }
 
   const toggle = (guest, field) => updateGuest(guest.id, { [field]: !guest[field] })
+  const filters = [
+    { key: 'all', label: t.filterAll, count: stats.total },
+    { key: 'notSent', label: t.filterNotSent, count: stats.notSent },
+    { key: 'pending', label: t.filterPending, count: stats.pending },
+    { key: 'accepted', label: t.filterAccepted, count: stats.accepted },
+    { key: 'maybe', label: t.filterMaybe, count: stats.maybe },
+    { key: 'declined', label: t.filterDeclined, count: stats.declined },
+  ]
 
   return (
     <>
@@ -118,130 +127,157 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       </div>
 
       <motion.form
-        className="add-form"
+        className="add-form guest-add-form"
         onSubmit={onSubmit}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t.addPlaceholder}
-          aria-label={t.guests}
-        />
+        <div className="guest-add-field">
+          <AppIcon icon={UserPlus} size={18} />
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t.addPlaceholder}
+            aria-label={t.guests}
+          />
+        </div>
         <motion.button type="submit" whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+          <AppIcon icon={Plus} size={17} />
           {t.add}
         </motion.button>
       </motion.form>
 
-      <div className="search-box">
-        <AppIcon icon={Search} className="search-ico" size={18} />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.searchPlaceholder}
-          aria-label={t.searchPlaceholder}
-        />
-      </div>
+      <div className="guest-list-tools">
+        <div className="search-box">
+          <AppIcon icon={Search} className="search-ico" size={18} />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            aria-label={t.searchPlaceholder}
+          />
+        </div>
 
-      <div className="filters">
-        <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
-          {t.filterAll}
-        </button>
-        <button
-          className={filter === 'notSent' ? 'on' : ''}
-          onClick={() => setFilter('notSent')}
-        >
-          {t.filterNotSent}
-        </button>
-        <button className={filter === 'pending' ? 'on' : ''} onClick={() => setFilter('pending')}>
-          {t.filterPending}
-        </button>
-        <button className={filter === 'accepted' ? 'on' : ''} onClick={() => setFilter('accepted')}>
-          {t.filterAccepted}
-        </button>
-        <button className={filter === 'maybe' ? 'on' : ''} onClick={() => setFilter('maybe')}>
-          {t.filterMaybe}
-        </button>
-        <button className={filter === 'declined' ? 'on' : ''} onClick={() => setFilter('declined')}>
-          {t.filterDeclined}
-        </button>
+        <div className="filters">
+          {filters.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={filter === option.key ? 'on' : ''}
+              aria-pressed={filter === option.key}
+              onClick={() => setFilter(option.key)}
+            >
+              <span>{option.label}</span>
+              <span className="filter-count">{option.count}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <ul className="guest-list">
         <AnimatePresence initial={false}>
-          {visible.map((guest) => (
-            <motion.li
-              key={guest.id}
-              className={`guest guest--${guest.reply_status}`}
-              layout
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 40, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            >
-              {/* Colored spine: re-keys on status change to replay the grow. */}
-              <motion.span
-                className="guest-spine"
-                key={guest.reply_status}
-                initial={{ scaleY: 0.3, opacity: 0.4 }}
-                animate={{ scaleY: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-              />
-              <div className="guest-body">
-                <span className="guest-name" title={guest.name}>
-                  {guest.name}
-                </span>
-
-                <div className="guest-actions">
-                  <Check
-                    label={t.sent}
-                    checked={guest.sent}
-                    accent="sent"
-                    onChange={() => toggle(guest, 'sent')}
-                  />
-                  <StatusSelect
-                    t={t}
-                    status={guest.reply_status}
-                    onChange={(reply_status) => {
-                      // A real reply implies the invite went out - mark it sent if
-                      // it wasn't already. Clearing back to pending leaves sent alone.
-                      const fields = { reply_status }
-                      if (reply_status !== 'pending' && !guest.sent) fields.sent = true
-                      updateGuest(guest.id, fields)
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button
-                className="remove"
-                onClick={() => removeGuest(guest.id)}
-                aria-label={t.remove(guest.name)}
-                title={t.remove(guest.name)}
+          {visible.map((guest) => {
+            const statusLabel = {
+              accepted: t.statusAccepted,
+              maybe: t.statusMaybe,
+              declined: t.statusDeclined,
+              pending: t.statusPending,
+            }[guest.reply_status] || t.statusPending
+            return (
+              <motion.li
+                key={guest.id}
+                className={`guest guest--${guest.reply_status}`}
+                layout
+                initial={{ opacity: 0, y: -12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 40, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               >
-                <AppIcon icon={X} size={16} strokeWidth={2.1} />
-              </button>
-            </motion.li>
-          ))}
+                {/* Colored spine: re-keys on status change to replay the grow. */}
+                <motion.span
+                  className="guest-spine"
+                  key={guest.reply_status}
+                  initial={{ scaleY: 0.3, opacity: 0.4 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                />
+                <div className="guest-body">
+                  <div className="guest-identity">
+                    <span className="guest-monogram" aria-hidden="true">{initials(guest.name)}</span>
+                    <span className="guest-name-wrap">
+                      <span className="guest-name" title={guest.name}>{guest.name}</span>
+                      <span className="guest-meta">
+                        <span className="guest-status-dot" />
+                        {statusLabel}
+                        {(guest.party_size || 1) > 1 && (
+                          <span className="guest-party">×{guest.party_size}</span>
+                        )}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="guest-actions">
+                    <Check
+                      label={t.sent}
+                      checked={guest.sent}
+                      accent="sent"
+                      onChange={() => toggle(guest, 'sent')}
+                    />
+                    <StatusSelect
+                      t={t}
+                      status={guest.reply_status}
+                      onChange={(reply_status) => {
+                        // A real reply implies the invite went out - mark it sent if
+                        // it wasn't already. Clearing back to pending leaves sent alone.
+                        const fields = { reply_status }
+                        if (reply_status !== 'pending' && !guest.sent) fields.sent = true
+                        updateGuest(guest.id, fields)
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  className="remove"
+                  onClick={() => removeGuest(guest.id)}
+                  aria-label={t.remove(guest.name)}
+                  title={t.remove(guest.name)}
+                >
+                  <AppIcon icon={Trash2} size={15} strokeWidth={1.9} />
+                </button>
+              </motion.li>
+            )
+          })}
         </AnimatePresence>
 
         {!loading && guests.length === 0 && (
-          <motion.li className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {t.empty}
+          <motion.li className="empty guest-list-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <span className="guest-empty-icon"><AppIcon icon={UsersRound} size={24} /></span>
+            <span>{t.empty}</span>
           </motion.li>
         )}
         {!loading && guests.length > 0 && visible.length === 0 && (
-          <motion.li className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {t.noResults}
+          <motion.li className="empty guest-list-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <span className="guest-empty-icon"><AppIcon icon={Search} size={22} /></span>
+            <span>{t.noResults}</span>
           </motion.li>
         )}
       </ul>
     </>
   )
+}
+
+function initials(name) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0] || '')
+    .join('')
+    .toLocaleUpperCase()
 }
 
 function Stat({ label, value, accent, hint, icon }) {

@@ -145,6 +145,9 @@
 }
 
 .filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
   letter-spacing: 0.03em;
