@@ -309,6 +309,7 @@
 
 .stat--sent .stat-icon { color: var(--sent); }
 .stat--accepted .stat-icon { color: var(--accepted); }
+.stat--people .stat-icon { color: var(--rose-deep); }
 
 .stat-value {
   display: block;
@@ -324,6 +325,7 @@
 .stat--declined .stat-value { color: var(--declined); }
 .stat--pending .stat-value { color: var(--pending); }
 .stat--heads .stat-value { color: var(--rose-deep); }
+.stat--people .stat-value { color: var(--rose-deep); }
 
 .stat-label {
   display: block;

@@ -9,6 +9,7 @@ import {
   Search,
   Send,
   Trash2,
+  UserRound,
   UserPlus,
   UsersRound,
   X,
@@ -28,6 +29,7 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       guests.filter((g) => g.reply_status === s).reduce((n, g) => n + (g.party_size || 1), 0)
     return {
       total: guests.length,
+      totalPeople: guests.reduce((n, guest) => n + (guest.party_size || 1), 0),
       sent: guests.filter((g) => g.sent).length,
       accepted: by('accepted'),
       maybe: by('maybe'),
@@ -94,12 +96,13 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       </motion.header>
 
       <motion.section
-        className="stats"
+        className="stats stats--primary"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.25 }}
       >
         <Stat label={t.guests} value={stats.total} icon={UsersRound} />
+        <Stat label={t.persons} value={stats.totalPeople} accent="people" icon={UserRound} />
         <Stat label={t.sentCount} value={stats.sent} accent="sent" icon={Send} />
         <Stat label={t.acceptedCount} value={stats.accepted} accent="accepted" icon={CircleCheckBig} />
       </motion.section>
