@@ -133,6 +133,9 @@
 .admin-number-input {
   appearance: textfield;
   -moz-appearance: textfield;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .admin-number-input::-webkit-outer-spin-button,

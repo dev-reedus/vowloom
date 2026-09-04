@@ -1,5 +1,65 @@
 /* Responsive breakpoints */
 /* ---------- Responsive ---------- */
+@media (max-width: 700px) {
+  /* Switch before translated labels squeeze the name into multiple short lines. */
+  .guest {
+    display: block;
+    padding: 0.9rem 0.85rem 0.85rem 1rem;
+  }
+
+  .guest-body {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.72rem 0.8rem;
+  }
+
+  .guest-identity {
+    flex: none;
+    grid-column: 1 / -1;
+    width: 100%;
+    padding-right: 3rem;
+  }
+
+  .guest-counts {
+    display: grid;
+    min-width: 172px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    padding: 0.38rem 0.42rem;
+    background: rgba(255, 252, 250, 0.58);
+    border: 1px solid rgba(194, 168, 120, 0.2);
+    border-radius: 13px;
+  }
+
+  .guest-count {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.08rem 0.46rem;
+  }
+
+  .guest-count + .guest-count {
+    border-left: 1px solid rgba(194, 168, 120, 0.22);
+  }
+
+  .guest-actions {
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .remove {
+    position: absolute;
+    top: 0.58rem;
+    right: 0.46rem;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 @media (max-width: 600px) {
   .page {
     padding: 1rem 1rem 3rem;
@@ -67,62 +127,22 @@
     padding: 0 1.3rem;
   }
 
-  /* On phones, each invitation becomes one full-width ledger card: identity,
-     party composition, then RSVP actions. The delete action lives in the corner
-     instead of consuming a narrow column down the entire card. */
-  .guest {
-    display: block;
-    padding: 0.9rem 0.85rem 0.85rem 1rem;
-  }
-
+  /* On phones the second row separates again, preventing the two control
+     groups from competing for width or reducing their touch targets. */
   .guest-body {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.72rem;
-  }
-
-  .guest-identity {
-    flex: none;
-    width: 100%;
-    padding-right: 3rem;
   }
 
   .guest-counts {
-    display: grid;
     width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
-    padding: 0.38rem 0.42rem;
-    background: rgba(255, 252, 250, 0.58);
-    border: 1px solid rgba(194, 168, 120, 0.2);
-    border-radius: 13px;
-  }
-
-  .guest-count {
-    display: flex;
     min-width: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
-    padding: 0.08rem 0.46rem;
-  }
-
-  .guest-count + .guest-count {
-    border-left: 1px solid rgba(194, 168, 120, 0.22);
   }
 
   .guest-actions {
     width: 100%;
     justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .remove {
-    position: absolute;
-    top: 0.58rem;
-    right: 0.46rem;
-    width: 44px;
-    height: 44px;
   }
 }
 

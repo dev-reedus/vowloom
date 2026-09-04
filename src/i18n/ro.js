@@ -150,7 +150,7 @@ const ro = {
     seatsWord: 'locuri',
     printList: 'Tipărește lista',
     printCards: 'Carduri locuri',
-    printChildren: (n) => `${n} ${n === 1 ? 'copil' : 'copii'}`,
+    printChildrenLabel: (n) => (n === 1 ? 'copil' : 'copii'),
     printWeddingTitle: (names) => `Nunta ${names}`,
     footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 

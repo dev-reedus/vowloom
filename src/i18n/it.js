@@ -156,7 +156,7 @@ const it = {
     seatsWord: 'posti',
     printList: 'Stampa lista',
     printCards: 'Segnaposti',
-    printChildren: (n) => `${n} ${n === 1 ? 'bambino' : 'bambini'}`,
+    printChildrenLabel: (n) => (n === 1 ? 'bambino' : 'bambini'),
     printWeddingTitle: (names) => `Nozze di ${names}`,
     footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 

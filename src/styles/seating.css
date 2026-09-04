@@ -452,7 +452,8 @@
   border-right: 1px solid rgba(150, 119, 78, 0.15);
   border-left: 1px solid rgba(150, 119, 78, 0.15);
   font-variant-numeric: tabular-nums;
-  font-size: 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
 .room-viewport {
@@ -525,7 +526,7 @@
   border: 1px solid rgba(194, 168, 120, 0.42);
   border-radius: 999px;
   box-shadow: 0 2px 7px rgba(91, 65, 42, 0.12);
-  font-size: 0.55rem;
+  font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   pointer-events: none;
@@ -648,7 +649,7 @@
   background: rgba(201, 154, 154, 0.12);
   border: 1px solid rgba(201, 154, 154, 0.2);
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.88rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -758,7 +759,14 @@
 }
 
 .party-btn:disabled { opacity: 0.4; }
-.party-n { min-width: 1ch; text-align: center; font-weight: 600; font-size: 0.9rem; }
+.party-n {
+  min-width: 1.15rem;
+  text-align: center;
+  font-size: 1.02rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
 
 .muted { margin: 0.25rem 0; color: var(--ink-soft); font-style: italic; }
 
@@ -1127,6 +1135,12 @@
   outline: none;
 }
 
+.floorplan-inspector input[type='number'] {
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .floorplan-inspector input:focus,
 .floorplan-inspector select:focus { border-color: var(--rose-deep); box-shadow: 0 0 0 3px rgba(182, 111, 121, 0.12); }
 
@@ -1286,7 +1300,9 @@
   padding: 0.25rem 0;
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: 1.12rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
   color: var(--ink);
   text-align: center;
   outline: none;
@@ -1361,8 +1377,9 @@
 }
 
 .seat-count-edit .scn {
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   color: var(--ink-soft);
   min-width: 4.5ch;
   text-align: center;

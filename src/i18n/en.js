@@ -156,7 +156,7 @@ const en = {
     seatsWord: 'seats',
     printList: 'Print list',
     printCards: 'Place cards',
-    printChildren: (n) => `${n} ${n === 1 ? 'child' : 'children'}`,
+    printChildrenLabel: (n) => (n === 1 ? 'child' : 'children'),
     printWeddingTitle: (names) => `${names} · Seating plan`,
     footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 

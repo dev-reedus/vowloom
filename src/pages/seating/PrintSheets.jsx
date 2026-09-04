@@ -38,17 +38,22 @@ export function PrintChart({ guests, tables, title, t }) {
             <section className="pc-table" key={tb.id}>
               <header className="pc-table-head">
                 <h2>{tb.label}</h2>
-                <span className="pc-capacity">{occ}<i>/</i>{tb.seats}</span>
+                <span className="pc-capacity">
+                  <strong>{occ}</strong><i>/</i><strong>{tb.seats}</strong>
+                </span>
               </header>
               <ol>
                 {gs.map((g) => (
                   <li key={g.id}>
                     <span className="pc-guest-name">{g.name}</span>
                     {(g.party_size || 1) > 1 && (
-                      <span className="pc-party-size">×{g.party_size}</span>
+                      <span className="pc-party-size">×<strong>{g.party_size}</strong></span>
                     )}
                     {(g.children_count || 0) > 0 && (
-                      <span className="pc-children">+ {t.printChildren(g.children_count)}</span>
+                      <span className="pc-children">
+                        <strong>+{g.children_count}</strong>
+                        <span>{t.printChildrenLabel(g.children_count)}</span>
+                      </span>
                     )}
                   </li>
                 ))}
