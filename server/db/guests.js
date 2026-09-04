@@ -9,6 +9,7 @@ const toGuest = (row) => {
     reply_status,
     accepted: reply_status === 'accepted', // derived, kept for older read paths
     party_size: row.party_size ?? 1,
+    children_count: row.children_count ?? 0,
     table_id: row.table_id ?? null,
     seat_index: row.seat_index ?? null,
   }
@@ -27,7 +28,15 @@ export function addGuest(name) {
 
 // Update only the provided fields among a small allow-list. `reply_status` is
 // the source of truth for the reply; `accepted` is derived from it below for backward compatibility.
-const GUEST_FIELDS = ['name', 'sent', 'reply_status', 'party_size', 'table_id', 'seat_index']
+const GUEST_FIELDS = [
+  'name',
+  'sent',
+  'reply_status',
+  'party_size',
+  'children_count',
+  'table_id',
+  'seat_index',
+]
 
 export function updateGuest(id, rawFields) {
   const current = db.prepare('SELECT * FROM guests WHERE id = ?').get(id)
@@ -55,6 +64,7 @@ export function updateGuest(id, rawFields) {
     if (key === 'table_id') v = v == null ? null : Number(v)
     if (key === 'seat_index') v = v == null ? null : Number(v)
     if (key === 'party_size') v = Math.max(1, Number(v) || 1)
+    if (key === 'children_count') v = Math.max(0, Number(v) || 0)
     sets.push(`${key} = ?`)
     values.push(v)
   }

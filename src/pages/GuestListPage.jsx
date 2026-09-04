@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check as CheckIcon,
+  Baby,
   ChevronDown,
   CircleCheckBig,
   Pencil,
@@ -30,6 +31,9 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
     return {
       total: guests.length,
       totalPeople: guests.reduce((n, guest) => n + (guest.party_size || 1), 0),
+      acceptedChildren: guests
+        .filter((guest) => guest.reply_status === 'accepted')
+        .reduce((n, guest) => n + (guest.children_count || 0), 0),
       sent: guests.filter((g) => g.sent).length,
       accepted: by('accepted'),
       maybe: by('maybe'),
@@ -103,6 +107,12 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
       >
         <Stat label={t.guests} value={stats.total} icon={UsersRound} />
         <Stat label={t.persons} value={stats.totalPeople} accent="people" icon={UserRound} />
+        <Stat
+          label={t.confirmedChildren}
+          value={stats.acceptedChildren}
+          accent="children"
+          icon={Baby}
+        />
         <Stat label={t.sentCount} value={stats.sent} accent="sent" icon={Send} />
         <Stat label={t.acceptedCount} value={stats.accepted} accent="accepted" icon={CircleCheckBig} />
       </motion.section>
@@ -227,11 +237,25 @@ export default function GuestListPage({ t, guests, loading, addGuest, updateGues
                       <span className="guest-meta">
                         <span className="guest-status-dot" />
                         {statusLabel}
-                        {(guest.party_size || 1) > 1 && (
-                          <span className="guest-party">×{guest.party_size}</span>
-                        )}
                       </span>
                     </div>
+                  </div>
+
+                  <div className="guest-counts" aria-label={t.groupComposition}>
+                    <GuestCount
+                      label={t.persons}
+                      value={guest.party_size || 1}
+                      min={1}
+                      onChange={(party_size) => updateGuest(guest.id, { party_size })}
+                    />
+                    <GuestCount
+                      label={t.children}
+                      hint={t.childrenNotSeated}
+                      value={guest.children_count || 0}
+                      min={0}
+                      accent="children"
+                      onChange={(children_count) => updateGuest(guest.id, { children_count })}
+                    />
                   </div>
 
                   <div className="guest-actions">
@@ -371,6 +395,33 @@ function initials(name) {
     .map((part) => Array.from(part)[0] || '')
     .join('')
     .toLocaleUpperCase()
+}
+
+function GuestCount({ label, hint, value, min, max = 100, accent, onChange }) {
+  return (
+    <span className={`guest-count ${accent ? `guest-count--${accent}` : ''}`} title={hint || label}>
+      <span className="guest-count-label">{label}</span>
+      <span className="guest-count-stepper">
+        <button
+          type="button"
+          disabled={value <= min}
+          aria-label={`${label}: −`}
+          onClick={() => onChange(Math.max(min, value - 1))}
+        >
+          −
+        </button>
+        <span className="guest-count-value" aria-live="polite">{value}</span>
+        <button
+          type="button"
+          disabled={value >= max}
+          aria-label={`${label}: +`}
+          onClick={() => onChange(Math.min(max, value + 1))}
+        >
+          +
+        </button>
+      </span>
+    </span>
+  )
 }
 
 function Stat({ label, value, accent, hint, icon }) {

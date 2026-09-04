@@ -80,6 +80,7 @@ test('migration backfills reply_status from the legacy accepted column', () => {
   const legacy = listGuests().find((g) => g.name === 'Legacy Accepted')
   assert.equal(legacy.reply_status, 'accepted')
   assert.equal(legacy.accepted, true)
+  assert.equal(legacy.children_count, 0)
 })
 
 test('example tables are opt-in and use a generic layout', () => {
@@ -120,6 +121,15 @@ test('a new guest defaults to pending / not accepted', () => {
   const g = addGuest('Fresh Guest')
   assert.equal(g.reply_status, 'pending')
   assert.equal(g.accepted, false)
+  assert.equal(g.children_count, 0)
+})
+
+test('children are tracked separately from the party size used for seating', () => {
+  const g = addGuest('Family With Children')
+  const updated = updateGuest(g.id, { party_size: 2, children_count: 3 })
+  assert.equal(updated.party_size, 2)
+  assert.equal(updated.children_count, 3)
+  assert.equal(listGuests().find((guest) => guest.id === g.id).children_count, 3)
 })
 
 test('reply_status accepted derives accepted=true', () => {

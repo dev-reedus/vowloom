@@ -5,6 +5,10 @@ const en = {
     guests: 'Guests',
     sentCount: 'Invitations Sent',
     acceptedCount: 'Accepted',
+    children: 'Children',
+    confirmedChildren: 'Confirmed children',
+    groupComposition: 'People and children in this group',
+    childrenNotSeated: 'Tracked only — not included in table assignment',
     addPlaceholder: 'Add a guest or family…',
     add: 'Add',
     sent: 'Sent',
@@ -152,6 +156,7 @@ const en = {
     seatsWord: 'seats',
     printList: 'Print list',
     printCards: 'Place cards',
+    printChildren: (n) => `${n} ${n === 1 ? 'child' : 'children'}`,
     printWeddingTitle: (names) => `${names} · Seating plan`,
     footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 

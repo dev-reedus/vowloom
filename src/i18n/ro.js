@@ -5,6 +5,10 @@ const ro = {
     guests: 'Invitați',
     sentCount: 'Invitații trimise',
     acceptedCount: 'Confirmați',
+    children: 'Copii',
+    confirmedChildren: 'Copii confirmați',
+    groupComposition: 'Persoane și copii din acest grup',
+    childrenNotSeated: 'Doar pentru evidență — nu sunt incluși în repartizarea la mese',
     addPlaceholder: 'Adaugă un invitat sau o familie...',
     add: 'Adaugă',
     sent: 'Trimis',
@@ -146,6 +150,7 @@ const ro = {
     seatsWord: 'locuri',
     printList: 'Tipărește lista',
     printCards: 'Carduri locuri',
+    printChildren: (n) => `${n} ${n === 1 ? 'copil' : 'copii'}`,
     printWeddingTitle: (names) => `Nunta ${names}`,
     footerCredit: (names, year) => `${names}${year ? ` · ${year}` : ''}`,
 

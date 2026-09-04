@@ -148,6 +148,11 @@ function migrate() {
       for (const r of rows) upd.run(defaultPartySize(r.name), r.id)
     })()
   }
+  if (!columnExists('guests', 'children_count')) {
+    // Children are tracked per invitation, but deliberately kept separate from
+    // party_size because only party_size participates in table capacity.
+    db.exec('ALTER TABLE guests ADD COLUMN children_count INTEGER NOT NULL DEFAULT 0')
+  }
   if (!columnExists('guests', 'table_id')) {
     db.exec('ALTER TABLE guests ADD COLUMN table_id INTEGER')
   }

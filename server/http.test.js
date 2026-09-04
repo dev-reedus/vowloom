@@ -191,6 +191,36 @@ test('an existing guest name can be edited', async () => {
   assert.equal((await list.json()).find((item) => item.id === guest.id)?.name, 'Name after edit')
 })
 
+test('a guest can track children separately from seating party size', async () => {
+  const { cookie } = await loginCookie('couple-pw-aaa')
+  const headers = { cookie, 'Content-Type': 'application/json' }
+  const created = await fetch(`${base}/api/guests`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name: 'Family counter' }),
+  })
+  const guest = await created.json()
+  assert.equal(guest.children_count, 0)
+
+  const updated = await fetch(`${base}/api/guests/${guest.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ party_size: 2, children_count: 3 }),
+  })
+  assert.equal(updated.status, 200)
+  assert.deepEqual(
+    (({ party_size, children_count }) => ({ party_size, children_count }))(await updated.json()),
+    { party_size: 2, children_count: 3 },
+  )
+
+  const invalid = await fetch(`${base}/api/guests/${guest.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ children_count: -1 }),
+  })
+  assert.equal(invalid.status, 400)
+})
+
 test('malformed guest and table requests return JSON validation errors', async () => {
   const { cookie } = await loginCookie('couple-pw-aaa')
   const jsonHeaders = { cookie, 'Content-Type': 'application/json' }

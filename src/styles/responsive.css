@@ -37,8 +37,11 @@
   }
 
   .stats--primary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
+
+  .stats--primary > .stat:nth-child(-n + 3) { grid-column: span 2; }
+  .stats--primary > .stat:nth-child(n + 4) { grid-column: span 3; }
 
   .stat {
     padding: 0.85rem 0.35rem;
@@ -63,37 +66,69 @@
   .add-form button {
     padding: 0 1.3rem;
   }
+
+  /* On phones, each invitation becomes one full-width ledger card: identity,
+     party composition, then RSVP actions. The delete action lives in the corner
+     instead of consuming a narrow column down the entire card. */
+  .guest {
+    display: block;
+    padding: 0.9rem 0.85rem 0.85rem 1rem;
+  }
+
+  .guest-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.72rem;
+  }
+
+  .guest-identity {
+    flex: none;
+    width: 100%;
+    padding-right: 3rem;
+  }
+
+  .guest-counts {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    padding: 0.38rem 0.42rem;
+    background: rgba(255, 252, 250, 0.58);
+    border: 1px solid rgba(194, 168, 120, 0.2);
+    border-radius: 13px;
+  }
+
+  .guest-count {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.08rem 0.46rem;
+  }
+
+  .guest-count + .guest-count {
+    border-left: 1px solid rgba(194, 168, 120, 0.22);
+  }
+
+  .guest-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .remove {
+    position: absolute;
+    top: 0.58rem;
+    right: 0.46rem;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 @media (max-width: 480px) {
-  /* Card stays a row: [name + actions] on the left, delete button in its own
-     column on the right, vertically centered against the whole card. */
-  .guest {
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.9rem 1rem;
-  }
-
-  /* Stack the name over the status controls within the left column. */
-  .guest-body {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .guest-identity,
-  .guest-actions {
-    width: 100%;
-  }
-
-  .guest-identity { flex: none; }
-
   .guest-name {
     font-size: 1.2rem;
-  }
-
-  .guest-actions {
-    justify-content: space-between;
   }
 
   .check {
@@ -107,12 +142,6 @@
     height: 28px;
   }
 
-  /* Bigger, thumb-friendly delete button (≈44px). */
-  .remove {
-    width: 42px;
-    height: 42px;
-    font-size: 1.6rem;
-  }
 }
 
 @media (max-width: 360px) {
@@ -142,5 +171,13 @@
   .guest-actions {
     justify-content: flex-start;
     gap: 1.5rem;
+  }
+
+  .guest-count {
+    padding-inline: 0.3rem;
+  }
+
+  .guest-count-label {
+    font-size: 0.58rem;
   }
 }

@@ -59,7 +59,16 @@ export function guestCreateBody(rawBody) {
 
 export function guestPatchBody(rawBody) {
   const body = objectBody(rawBody)
-  const allowed = new Set(['name', 'sent', 'accepted', 'reply_status', 'party_size', 'table_id', 'seat_index'])
+  const allowed = new Set([
+    'name',
+    'sent',
+    'accepted',
+    'reply_status',
+    'party_size',
+    'children_count',
+    'table_id',
+    'seat_index',
+  ])
   onlyFields(body, allowed)
   const fields = {}
 
@@ -71,6 +80,9 @@ export function guestPatchBody(rawBody) {
     fields.reply_status = body.reply_status
   }
   if ('party_size' in body) fields.party_size = integer(body.party_size, 'party_size', { min: 1, max: 100 })
+  if ('children_count' in body) {
+    fields.children_count = integer(body.children_count, 'children_count', { min: 0, max: 100 })
+  }
   if ('table_id' in body) fields.table_id = integer(body.table_id, 'table_id', { min: 1, nullable: true })
   if ('seat_index' in body) fields.seat_index = integer(body.seat_index, 'seat_index', { min: 0, nullable: true })
   if (!Object.keys(fields).length) fail('at least one guest field is required')

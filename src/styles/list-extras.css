@@ -215,6 +215,19 @@
   text-align: center;
 }
 
+.pc-children {
+  flex: 0 0 auto;
+  padding: 0.25mm 1.5mm;
+  color: #587986;
+  background: #edf4f6;
+  border: 0.2mm solid #d2e2e7;
+  border-radius: 99mm;
+  font-size: 7.5pt;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
 .pc-empty {
   margin: 2mm 0 0.5mm;
   color: #b8a89d;

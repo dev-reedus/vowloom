@@ -204,6 +204,79 @@
   min-width: 0;
 }
 
+/* Adults/persons and children stay visibly separate: only the first counter
+   is used by the seating planner, while the blue-tinted counter is tracking-only. */
+.guest-counts {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.guest-count {
+  display: grid;
+  gap: 0.18rem;
+  justify-items: center;
+}
+
+.guest-count-label {
+  color: var(--ink-soft);
+  font-size: 0.63rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.guest-count-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.13rem;
+  background: rgba(247, 237, 232, 0.92);
+  border: 1px solid rgba(194, 168, 120, 0.2);
+  border-radius: 999px;
+}
+
+.guest-count-stepper button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  place-items: center;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.guest-count-stepper button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.guest-count-value {
+  min-width: 1.3rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.guest-count--children .guest-count-label { color: #708f9c; }
+.guest-count--children .guest-count-stepper {
+  background: rgba(225, 237, 241, 0.78);
+  border-color: rgba(112, 143, 156, 0.22);
+}
+.guest-count--children .guest-count-stepper button { color: #587b89; }
+
+@media (hover: hover) {
+  .guest-count-stepper button:not(:disabled):hover { background: #fff; color: var(--rose-deep); }
+  .guest-count--children .guest-count-stepper button:not(:disabled):hover { color: #426d7e; }
+}
+
 .guest-name-row {
   display: flex;
   align-items: center;
@@ -315,17 +388,6 @@
 .guest--accepted .guest-status-dot { background: var(--accepted); box-shadow: 0 0 0 3px rgba(143, 174, 134, 0.13); }
 .guest--maybe .guest-status-dot { background: var(--maybe); box-shadow: 0 0 0 3px rgba(208, 162, 78, 0.13); }
 .guest--declined .guest-status-dot { background: var(--declined); box-shadow: 0 0 0 3px rgba(185, 141, 141, 0.13); }
-
-.guest-party {
-  margin-left: 0.14rem;
-  padding: 0.15rem 0.38rem;
-  color: var(--rose-deep);
-  background: rgba(201, 154, 154, 0.12);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0;
-}
 
 .guest-actions {
   display: flex;

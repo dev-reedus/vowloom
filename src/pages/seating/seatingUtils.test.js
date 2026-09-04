@@ -1,6 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hasRoomOutline, pointInPolygon, rectangularFloorplan, tableSize } from './seatingUtils.js'
+import { buildSeatMap, hasRoomOutline, partySize, pointInPolygon, rectangularFloorplan, tableSize } from './seatingUtils.js'
+
+test('children do not count toward table capacity or occupied seats', () => {
+  const family = { id: 1, table_id: 4, seat_index: 0, party_size: 2, children_count: 3 }
+  assert.equal(partySize(family), 2)
+  assert.equal(buildSeatMap([family], 4, 8).filter(Boolean).length, 2)
+})
 
 test('overview table sizes stay compact as seat counts grow', () => {
   assert.equal(tableSize(1), 44)

@@ -21,7 +21,7 @@ function PrintFlourish() {
 }
 
 // Print sheet: one block per table with its seated guests, ordered by table number then seat.
-export function PrintChart({ guests, tables, title }) {
+export function PrintChart({ guests, tables, title, t }) {
   const sorted = [...tables].sort((a, b) => tableNum(a.label) - tableNum(b.label))
   return (
     <div className="print-chart">
@@ -46,6 +46,9 @@ export function PrintChart({ guests, tables, title }) {
                     <span className="pc-guest-name">{g.name}</span>
                     {(g.party_size || 1) > 1 && (
                       <span className="pc-party-size">×{g.party_size}</span>
+                    )}
+                    {(g.children_count || 0) > 0 && (
+                      <span className="pc-children">+ {t.printChildren(g.children_count)}</span>
                     )}
                   </li>
                 ))}

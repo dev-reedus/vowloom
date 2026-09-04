@@ -631,7 +631,7 @@ export default function SeatingPage({
       {printKind && (
         <div className="print-area">
           {printKind === 'chart' ? (
-            <PrintChart guests={guests} tables={tables} title={printTitle} />
+            <PrintChart guests={guests} tables={tables} title={printTitle} t={t} />
           ) : (
             <PrintCards guests={guests} tables={tables} />
           )}
